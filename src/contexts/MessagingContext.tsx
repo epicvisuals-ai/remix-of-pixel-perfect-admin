@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { Attachment } from "@/components/messaging/MessageAttachment";
 
 export type MessageStatus = "sending" | "sent" | "delivered" | "read";
 
@@ -12,6 +13,7 @@ export interface Message {
   timestamp: Date;
   isOwn: boolean;
   status: MessageStatus;
+  attachments?: Attachment[];
 }
 
 export interface Conversation {
@@ -30,7 +32,7 @@ interface MessagingContextType {
   activeConversation: string | null;
   messages: Message[];
   setActiveConversation: (id: string | null) => void;
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string, attachments?: Attachment[]) => void;
   startConversation: (participantId: string, participantName: string, participantAvatar: string) => string;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -88,6 +90,16 @@ const initialMessages: Record<string, Message[]> = {
       timestamp: new Date(Date.now() - 1000 * 60 * 30),
       isOwn: false,
       status: "read",
+      attachments: [
+        {
+          id: "att-1",
+          name: "portfolio-sample.jpg",
+          type: "image",
+          url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=300&fit=crop",
+          size: 245000,
+          mimeType: "image/jpeg",
+        },
+      ],
     },
   ],
 };
@@ -122,8 +134,8 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const sendMessage = useCallback((content: string) => {
-    if (!activeConversation || !content.trim()) return;
+  const sendMessage = useCallback((content: string, attachments?: Attachment[]) => {
+    if (!activeConversation || (!content.trim() && (!attachments || attachments.length === 0))) return;
 
     const msgId = `msg-${Date.now()}`;
     const newMessage: Message = {
@@ -136,6 +148,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       timestamp: new Date(),
       isOwn: true,
       status: "sending",
+      attachments,
     };
 
     setAllMessages((prev) => ({
@@ -143,10 +156,14 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       [activeConversation]: [...(prev[activeConversation] || []), newMessage],
     }));
 
+    const lastMessageText = attachments && attachments.length > 0 && !content.trim()
+      ? `📎 ${attachments.length} attachment${attachments.length > 1 ? "s" : ""}`
+      : content.trim();
+
     setConversations((prev) =>
       prev.map((conv) =>
         conv.id === activeConversation
-          ? { ...conv, lastMessage: content.trim(), lastMessageTime: new Date() }
+          ? { ...conv, lastMessage: lastMessageText, lastMessageTime: new Date() }
           : conv
       )
     );
@@ -205,7 +222,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         senderId: conv.participantId,
         senderName: conv.participantName,
         senderAvatar: conv.participantAvatar,
-        content: getRandomReply(),
+        content: getRandomReply(attachments && attachments.length > 0),
         timestamp: new Date(),
         isOwn: false,
         status: "delivered",
@@ -228,7 +245,6 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
 
   const setUserTyping = useCallback((isTyping: boolean) => {
     // In a real app, this would emit to the server
-    // For now, it's just a placeholder for the UI to use
   }, []);
 
   const startConversation = useCallback((participantId: string, participantName: string, participantAvatar: string) => {
@@ -278,7 +294,17 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function getRandomReply(): string {
+function getRandomReply(hasAttachment?: boolean): string {
+  if (hasAttachment) {
+    const attachmentReplies = [
+      "Thanks for sharing! This looks great.",
+      "I've received the files. Let me take a look.",
+      "Perfect! These are exactly what I needed to understand the project better.",
+      "Got it! I'll review these and get back to you shortly.",
+    ];
+    return attachmentReplies[Math.floor(Math.random() * attachmentReplies.length)];
+  }
+  
   const replies = [
     "That sounds great! I'd love to discuss this further.",
     "Thanks for the details. When would you like to start?",
