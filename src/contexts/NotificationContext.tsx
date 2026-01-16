@@ -15,6 +15,34 @@ export interface Notification {
   creatorAvatar?: string;
 }
 
+export interface NotificationPreferences {
+  types: {
+    message: boolean;
+    status_change: boolean;
+    assignment: boolean;
+    system: boolean;
+  };
+  delivery: {
+    inApp: boolean;
+    sound: boolean;
+    browser: boolean;
+  };
+}
+
+const defaultPreferences: NotificationPreferences = {
+  types: {
+    message: true,
+    status_change: true,
+    assignment: true,
+    system: true,
+  },
+  delivery: {
+    inApp: true,
+    sound: true,
+    browser: false,
+  },
+};
+
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
@@ -25,6 +53,8 @@ interface NotificationContextType {
   clearAll: () => void;
   notificationPermission: NotificationPermission;
   requestNotificationPermission: () => Promise<boolean>;
+  preferences: NotificationPreferences;
+  updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -73,13 +103,28 @@ const mockNotifications: Notification[] = [
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const { play: playSound } = useNotificationSound();
   const { permission, requestPermission, showNotification, isTabVisible } = useBrowserNotifications();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const updatePreferences = useCallback((prefs: Partial<NotificationPreferences>) => {
+    setPreferences((prev) => ({
+      ...prev,
+      ...prefs,
+      types: { ...prev.types, ...prefs.types },
+      delivery: { ...prev.delivery, ...prefs.delivery },
+    }));
+  }, []);
+
   const addNotification = useCallback(
     (notification: Omit<Notification, "id" | "createdAt" | "read">, showToast = true) => {
+      // Check if this notification type is enabled
+      if (!preferences.types[notification.type]) {
+        return;
+      }
+
       const newNotification: Notification = {
         ...notification,
         id: `notif-${Date.now()}`,
@@ -88,19 +133,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       };
       setNotifications((prev) => [newNotification, ...prev]);
 
-      // Play notification sound
-      playSound();
+      // Play notification sound if enabled
+      if (preferences.delivery.sound) {
+        playSound();
+      }
 
-      // Show browser notification if tab is not visible
-      if (!isTabVisible) {
+      // Show browser notification if enabled and tab is not visible
+      if (preferences.delivery.browser && !isTabVisible) {
         showNotification(notification.title, {
           body: notification.description,
           tag: newNotification.id,
         });
       }
 
-      // Show toast notification
-      if (showToast) {
+      // Show toast notification if in-app is enabled
+      if (showToast && preferences.delivery.inApp) {
         const toastIcon = notification.type === "message" ? "💬" : 
                           notification.type === "status_change" ? "🔄" :
                           notification.type === "assignment" ? "👤" : "ℹ️";
@@ -117,7 +164,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
       }
     },
-    [playSound, showNotification, isTabVisible]
+    [playSound, showNotification, isTabVisible, preferences]
   );
 
   const markAsRead = useCallback((id: string) => {
@@ -172,6 +219,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         clearAll,
         notificationPermission: permission,
         requestNotificationPermission: requestPermission,
+        preferences,
+        updatePreferences,
       }}
     >
       {children}
