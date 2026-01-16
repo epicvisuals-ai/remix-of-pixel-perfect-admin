@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { FavoriteButton } from "@/components/creators/FavoriteButton";
 import { ReviewCard } from "@/components/creators/ReviewCard";
+import { RequestQuoteModal } from "@/components/creators/RequestQuoteModal";
+import { useMessaging } from "@/contexts/MessagingContext";
 
 // Mock reviews data
 const reviewsData: Record<string, Array<{
@@ -172,7 +174,9 @@ const defaultCreator = {
 export default function CreatorProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { startConversation } = useMessaging();
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   
   const creator = id && creatorsData[id] ? creatorsData[id] : defaultCreator;
   const reviews = id && reviewsData[id] ? reviewsData[id] : defaultReviews;
@@ -243,11 +247,16 @@ export default function CreatorProfilePage() {
 
         <div className="flex gap-3 pt-2 md:pt-0">
           <FavoriteButton creatorId={creator.id} />
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            onClick={() => startConversation(creator.id, creator.name, creator.avatar)}
+          >
             <MessageCircle className="h-4 w-4" />
             Message
           </Button>
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2" onClick={() => setQuoteModalOpen(true)}>
             Start Project
           </Button>
         </div>
@@ -353,10 +362,18 @@ export default function CreatorProfilePage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Start a project and bring your ideas to life
         </p>
-        <Button className="mt-4" size="lg">
+        <Button className="mt-4" size="lg" onClick={() => setQuoteModalOpen(true)}>
           Start Project
         </Button>
       </div>
+
+      {/* Request Quote Modal */}
+      <RequestQuoteModal
+        open={quoteModalOpen}
+        onOpenChange={setQuoteModalOpen}
+        creatorName={creator.name}
+        creatorId={creator.id}
+      />
     </div>
   );
 }
