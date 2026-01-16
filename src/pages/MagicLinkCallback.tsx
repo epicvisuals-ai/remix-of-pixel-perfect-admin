@@ -13,13 +13,8 @@ const MagicLinkCallback = () => {
 
   useEffect(() => {
     const confirmAuth = async () => {
-      // Handle duplicate token params (e.g., ?token=&token=actual-token)
-      // getAll returns all values, we find the first non-empty one
-      const allTokens = searchParams.getAll('token');
-      const token = allTokens.find(t => t && t.trim() !== '') || null;
+      const token = searchParams.get('token');
       const email = localStorage.getItem('pending_auth_email');
-
-      console.log('Magic link params:', { allTokens, token, email });
 
       if (!token) {
         setStatus('error');
