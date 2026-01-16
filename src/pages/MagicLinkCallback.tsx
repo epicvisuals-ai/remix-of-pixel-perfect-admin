@@ -14,7 +14,7 @@ const MagicLinkCallback = () => {
   useEffect(() => {
     const confirmAuth = async () => {
       const token = searchParams.get('token');
-      const email = localStorage.getItem('pending_auth_email');
+      const email = searchParams.get('email') ?? localStorage.getItem('pending_auth_email');
 
       if (!token) {
         setStatus('error');
