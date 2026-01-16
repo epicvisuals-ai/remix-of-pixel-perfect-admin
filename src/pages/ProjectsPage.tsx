@@ -255,7 +255,7 @@ export default function ProjectsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Projects</h1>
-        <Button>
+        <Button onClick={() => navigate("/create-project")}>
           <Plus className="mr-2 h-4 w-4" />
           New Project
         </Button>
