@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Filter,
@@ -215,6 +216,7 @@ function formatCurrency(amount: number) {
 }
 
 export default function ProjectsPage() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("projects");
@@ -421,7 +423,7 @@ export default function ProjectsPage() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/projects/${project.id}`)}>
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <DropdownMenu>

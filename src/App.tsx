@@ -17,6 +17,7 @@ import CreatorsPage from "./pages/CreatorsPage";
 import CreatorProfilePage from "./pages/CreatorProfilePage";
 import MessagesPage from "./pages/MessagesPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
 import TeamPage from "./pages/settings/TeamPage";
 import ProfilePage from "./pages/settings/ProfilePage";
 import NotificationsPage from "./pages/settings/NotificationsPage";
@@ -53,6 +54,7 @@ const App = () => (
                     <Route path="/creators/:id" element={<CreatorProfilePage />} />
                     <Route path="/messages" element={<MessagesPage />} />
                     <Route path="/projects" element={<ProjectsPage />} />
+                    <Route path="/projects/:id" element={<ProjectDetailPage />} />
                     <Route path="/settings" element={<Navigate to="/settings/team" replace />} />
                     <Route path="/settings/team" element={<TeamPage />} />
                     <Route path="/settings/profile" element={<ProfilePage />} />
