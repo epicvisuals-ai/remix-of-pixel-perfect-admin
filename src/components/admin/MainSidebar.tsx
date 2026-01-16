@@ -81,7 +81,8 @@ export function MainSidebar({
   const isJobsActive = location.pathname === "/my-jobs";
   const isRequestsActive = location.pathname === "/my-requests";
   const isNewRequestActive = location.pathname === "/create-request";
-  const isCreatorsActive = location.pathname === "/creators";
+  const isCreatorsActive = location.pathname === "/creators" || location.pathname.startsWith("/creators/");
+  const isMessagesActive = location.pathname === "/messages";
 
   return (
     <div className="flex min-h-screen flex-col bg-sidebar">
@@ -185,6 +186,20 @@ export function MainSidebar({
               </Button>
             </>
           )}
+
+          {/* Messages */}
+          <Button
+            variant={isMessagesActive ? "sidebarActive" : "sidebar"}
+            size="sidebar"
+            onClick={() => handleNavClick("/messages")}
+            className={cn(
+              "gap-3 rounded-lg",
+              isMessagesActive && "bg-sidebar-accent"
+            )}
+          >
+            <MessageCircle className="h-5 w-5" />
+            <span>Messages</span>
+          </Button>
 
           {/* Settings with submenu */}
           <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>

@@ -15,6 +15,7 @@ import MyRequestsPage from "./pages/MyRequestsPage";
 import CreateRequestPage from "./pages/CreateRequestPage";
 import CreatorsPage from "./pages/CreatorsPage";
 import CreatorProfilePage from "./pages/CreatorProfilePage";
+import MessagesPage from "./pages/MessagesPage";
 import TeamPage from "./pages/settings/TeamPage";
 import ProfilePage from "./pages/settings/ProfilePage";
 import NotificationsPage from "./pages/settings/NotificationsPage";
@@ -49,6 +50,7 @@ const App = () => (
                     <Route path="/create-request" element={<CreateRequestPage />} />
                     <Route path="/creators" element={<CreatorsPage />} />
                     <Route path="/creators/:id" element={<CreatorProfilePage />} />
+                    <Route path="/messages" element={<MessagesPage />} />
                     <Route path="/settings" element={<Navigate to="/settings/team" replace />} />
                     <Route path="/settings/team" element={<TeamPage />} />
                     <Route path="/settings/profile" element={<ProfilePage />} />
