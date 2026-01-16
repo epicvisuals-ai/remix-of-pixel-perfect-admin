@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, MessageSquare, RefreshCw, UserPlus, Info, Check, Trash2, X } from "lucide-react";
+import { Bell, MessageSquare, RefreshCw, UserPlus, Info, Check, Trash2, X, BellRing } from "lucide-react";
 import { useNotifications, Notification } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +41,16 @@ const getNotificationColor = (type: Notification["type"]) => {
 };
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotification, clearAll } = useNotifications();
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    clearNotification, 
+    clearAll,
+    notificationPermission,
+    requestNotificationPermission,
+  } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleNotificationClick = (notification: Notification) => {
@@ -49,6 +58,10 @@ export function NotificationBell() {
       markAsRead(notification.id);
     }
     // Could navigate to the relevant request here
+  };
+
+  const handleEnableNotifications = async () => {
+    await requestNotificationPermission();
   };
 
   return (
@@ -153,6 +166,23 @@ export function NotificationBell() {
             </div>
           )}
         </ScrollArea>
+
+        {notificationPermission !== "granted" && (
+          <div className="border-t p-3 bg-muted/30">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={handleEnableNotifications}
+            >
+              <BellRing className="h-3 w-3 mr-1.5" />
+              Enable browser notifications
+            </Button>
+            <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+              Get notified even when this tab is inactive
+            </p>
+          </div>
+        )}
 
         {notifications.length > 0 && (
           <div className="border-t p-2">

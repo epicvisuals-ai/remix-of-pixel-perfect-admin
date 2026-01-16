@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 
 export interface Notification {
   id: string;
@@ -21,6 +23,8 @@ interface NotificationContextType {
   markAllAsRead: () => void;
   clearNotification: (id: string) => void;
   clearAll: () => void;
+  notificationPermission: NotificationPermission;
+  requestNotificationPermission: () => Promise<boolean>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -69,6 +73,8 @@ const mockNotifications: Notification[] = [
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const { play: playSound } = useNotificationSound();
+  const { permission, requestPermission, showNotification, isTabVisible } = useBrowserNotifications();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -81,6 +87,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         read: false,
       };
       setNotifications((prev) => [newNotification, ...prev]);
+
+      // Play notification sound
+      playSound();
+
+      // Show browser notification if tab is not visible
+      if (!isTabVisible) {
+        showNotification(notification.title, {
+          body: notification.description,
+          tag: newNotification.id,
+        });
+      }
 
       // Show toast notification
       if (showToast) {
@@ -100,7 +117,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
       }
     },
-    []
+    [playSound, showNotification, isTabVisible]
   );
 
   const markAsRead = useCallback((id: string) => {
@@ -153,6 +170,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         markAllAsRead,
         clearNotification,
         clearAll,
+        notificationPermission: permission,
+        requestNotificationPermission: requestPermission,
       }}
     >
       {children}
