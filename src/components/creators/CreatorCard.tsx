@@ -1,15 +1,22 @@
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
 interface CreatorCardProps {
+  id: string;
   name: string;
   portfolioImage: string;
   specialty: string;
   rating?: number;
 }
 
-export function CreatorCard({ name, portfolioImage, specialty, rating }: CreatorCardProps) {
+export function CreatorCard({ id, name, portfolioImage, specialty, rating }: CreatorCardProps) {
+  const navigate = useNavigate();
+
   return (
-    <div className="group cursor-pointer">
+    <div 
+      className="group cursor-pointer"
+      onClick={() => navigate(`/creators/${id}`)}
+    >
       <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted">
         <img
           src={portfolioImage}
