@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import MessagePopup from "@/components/projects/MessagePopup";
 import {
   Search,
   Filter,
@@ -220,6 +221,13 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("projects");
+  const [messagePopupOpen, setMessagePopupOpen] = useState(false);
+  const [selectedCreator, setSelectedCreator] = useState<{ name: string; avatar: string } | null>(null);
+
+  const handleMessageCreator = (creator: { name: string; avatar: string }) => {
+    setSelectedCreator(creator);
+    setMessagePopupOpen(true);
+  };
 
   const filteredProjects = mockProjects.filter((project) => {
     const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -433,9 +441,15 @@ export default function ProjectsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                              <DropdownMenuItem>Message Creator</DropdownMenuItem>
-                              <DropdownMenuItem>View Deliverables</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/projects/${project.id}`)}>
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleMessageCreator(project.creator)}>
+                                Message Creator
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/projects/${project.id}?tab=deliverables`)}>
+                                View Deliverables
+                              </DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive">
                                 Cancel Project
                               </DropdownMenuItem>
@@ -530,6 +544,14 @@ export default function ProjectsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {selectedCreator && (
+        <MessagePopup
+          open={messagePopupOpen}
+          onOpenChange={setMessagePopupOpen}
+          creator={selectedCreator}
+        />
+      )}
     </div>
   );
 }
