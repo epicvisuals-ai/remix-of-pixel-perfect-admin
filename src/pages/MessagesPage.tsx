@@ -9,6 +9,7 @@ import { TypingIndicator } from "@/components/messaging/TypingIndicator";
 import { MessageStatusIndicator } from "@/components/messaging/MessageStatusIndicator";
 import { MessageAttachment, Attachment, AttachmentPreview } from "@/components/messaging/MessageAttachment";
 import { FileUploadButton } from "@/components/messaging/FileUploadButton";
+import { EmojiPicker } from "@/components/messaging/EmojiPicker";
 import { cn } from "@/lib/utils";
 
 function formatTime(date: Date) {
@@ -286,6 +287,7 @@ export default function MessagesPage() {
               <div className="border-t border-border p-4">
                 <div className="flex gap-3">
                   <FileUploadButton onFilesSelected={handleFilesSelected} />
+                  <EmojiPicker onEmojiSelect={(emoji) => setNewMessage((prev) => prev + emoji)} />
                   <Input
                     ref={inputRef}
                     placeholder="Type a message..."
