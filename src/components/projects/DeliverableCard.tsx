@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import FileAttachment, { FileAttachmentItem } from "./FileAttachment";
+import FilePreviewModal from "./FilePreviewModal";
 
 type DeliverableStatus = "pending" | "in_progress" | "in_review" | "approved" | "revision_requested";
 type DeliverableType = "image" | "video" | "document";
@@ -77,6 +78,8 @@ export default function DeliverableCard({
   onDownload,
 }: DeliverableCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<FileAttachmentItem | null>(null);
   
   const status = deliverableStatusConfig[deliverable.status];
   const StatusIcon = status.icon;
@@ -88,6 +91,15 @@ export default function DeliverableCard({
 
   const handleRemoveAttachment = (attachmentId: string) => {
     onRemoveAttachment(deliverable.id, attachmentId);
+  };
+
+  const handlePreview = (file: FileAttachmentItem) => {
+    setPreviewFile(file);
+    setPreviewOpen(true);
+  };
+
+  const handleNavigate = (file: FileAttachmentItem) => {
+    setPreviewFile(file);
   };
 
   return (
@@ -193,13 +205,22 @@ export default function DeliverableCard({
               onUpload={handleUpload}
               onRemove={handleRemoveAttachment}
               onDownload={onDownload}
-              onPreview={(file) => file.url && window.open(file.url, "_blank")}
+              onPreview={handlePreview}
               maxFiles={5}
               maxSize={20}
             />
           </div>
         </CollapsibleContent>
       </div>
+
+      <FilePreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        file={previewFile}
+        files={attachments}
+        onNavigate={handleNavigate}
+        onDownload={onDownload}
+      />
     </Collapsible>
   );
 }
