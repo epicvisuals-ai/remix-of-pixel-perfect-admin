@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/auth",
+      "destination": "/auth.json"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
