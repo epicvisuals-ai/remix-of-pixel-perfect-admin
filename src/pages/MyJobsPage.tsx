@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from "react";
-import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send, Circle, Search, ArrowUpDown, Filter } from "lucide-react";
+import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send, Circle, Search, ArrowUpDown, Filter, TrendingUp, BarChart3 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
@@ -30,6 +30,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Progress } from "@/components/ui/progress";
 
 interface Deliverable {
   id: string;
@@ -688,11 +691,169 @@ const MyJobsPage = () => {
     );
   };
 
+  // Analytics calculations
+  const analytics = useMemo(() => {
+    const statusCounts = {
+      Submitted: jobs.filter((j) => j.status === "Submitted").length,
+      "In Progress": jobs.filter((j) => j.status === "In Progress").length,
+      Approved: jobs.filter((j) => j.status === "Approved").length,
+      Rejected: jobs.filter((j) => j.status === "Rejected").length,
+    };
+
+    const totalJobs = jobs.length;
+    const completedJobs = statusCounts.Approved;
+    const completionRate = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
+
+    const totalEarnings = jobs
+      .filter((j) => j.status === "Approved")
+      .reduce((sum, j) => sum + j.budget, 0);
+
+    const pendingEarnings = jobs
+      .filter((j) => j.status === "In Progress" || j.status === "Submitted")
+      .reduce((sum, j) => sum + j.budget, 0);
+
+    // Earnings by month (mock data for demo)
+    const earningsByMonth = [
+      { month: "Oct", earnings: 450 },
+      { month: "Nov", earnings: 800 },
+      { month: "Dec", earnings: 650 },
+      { month: "Jan", earnings: totalEarnings },
+    ];
+
+    const statusData = [
+      { name: "Submitted", value: statusCounts.Submitted, fill: "hsl(217, 91%, 60%)" },
+      { name: "In Progress", value: statusCounts["In Progress"], fill: "hsl(45, 93%, 47%)" },
+      { name: "Approved", value: statusCounts.Approved, fill: "hsl(142, 71%, 45%)" },
+      { name: "Rejected", value: statusCounts.Rejected, fill: "hsl(0, 84%, 60%)" },
+    ].filter((d) => d.value > 0);
+
+    return {
+      statusCounts,
+      statusData,
+      totalJobs,
+      completedJobs,
+      completionRate,
+      totalEarnings,
+      pendingEarnings,
+      earningsByMonth,
+    };
+  }, [jobs]);
+
+  const chartConfig = {
+    earnings: {
+      label: "Earnings",
+      color: "hsl(var(--primary))",
+    },
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">My Jobs</h1>
         <p className="text-muted-foreground">Jobs assigned to you</p>
+      </div>
+
+      {/* Analytics Dashboard */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in">
+        {/* Total Earnings Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              ${analytics.totalEarnings}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              +${analytics.pendingEarnings} pending
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Completion Rate Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.completionRate}%</div>
+            <Progress value={analytics.completionRate} className="mt-2 h-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {analytics.completedJobs} of {analytics.totalJobs} jobs completed
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Jobs by Status Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Jobs by Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[100px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analytics.statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={25}
+                    outerRadius={40}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {analytics.statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2 justify-center">
+              {analytics.statusData.map((item) => (
+                <div key={item.name} className="flex items-center gap-1 text-xs">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: item.fill }}
+                  />
+                  <span className="text-muted-foreground">{item.name}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Earnings Over Time Chart */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Earnings Trend</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[100px] w-full">
+              <BarChart data={analytics.earningsByMonth}>
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={10}
+                />
+                <ChartTooltip
+                  content={<ChartTooltipContent />}
+                  cursor={false}
+                />
+                <Bar
+                  dataKey="earnings"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filters */}
