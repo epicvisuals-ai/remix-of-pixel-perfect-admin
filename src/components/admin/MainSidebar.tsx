@@ -15,6 +15,7 @@ import {
   FileText,
   Plus,
   Bell,
+  FolderKanban,
   Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,7 @@ export function MainSidebar({
   const isNewRequestActive = location.pathname === "/create-request";
   const isCreatorsActive = location.pathname === "/creators" || location.pathname.startsWith("/creators/");
   const isMessagesActive = location.pathname === "/messages";
+  const isProjectsActive = location.pathname === "/projects";
 
   return (
     <div className="flex min-h-screen flex-col bg-sidebar">
@@ -183,6 +185,18 @@ export function MainSidebar({
               >
                 <Palette className="h-5 w-5" />
                 <span>Creators</span>
+              </Button>
+              <Button
+                variant={isProjectsActive ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                onClick={() => handleNavClick("/projects")}
+                className={cn(
+                  "gap-3 rounded-lg",
+                  isProjectsActive && "bg-sidebar-accent"
+                )}
+              >
+                <FolderKanban className="h-5 w-5" />
+                <span>Projects</span>
               </Button>
             </>
           )}
