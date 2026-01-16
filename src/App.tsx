@@ -7,7 +7,9 @@ import { ThemeProvider } from "next-themes";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { MessagingProvider } from "@/contexts/MessagingContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatPanel } from "@/components/messaging/ChatPanel";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import MyJobsPage from "./pages/MyJobsPage";
@@ -25,6 +27,7 @@ import NotificationsPage from "./pages/settings/NotificationsPage";
 import BillingPage from "./pages/settings/BillingPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import MagicLinkCallback from "./pages/MagicLinkCallback";
 import OnboardingPage from "./pages/OnboardingPage";
 import AdminRequestsPage from "./pages/admin/AdminRequestsPage";
 import AdminCreatorsPage from "./pages/admin/AdminCreatorsPage";
@@ -35,52 +38,59 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <NotificationProvider>
-        <FavoritesProvider>
-          <MessagingProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  {/* Auth Routes */}
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/onboarding" element={<OnboardingPage />} />
-                  
-                  {/* Main Layout with all routes */}
-                  <Route element={<MainLayout />}>
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/my-jobs" element={<MyJobsPage />} />
-                    <Route path="/my-requests" element={<MyRequestsPage />} />
-                    <Route path="/create-request" element={<CreateRequestPage />} />
-                    <Route path="/creators" element={<CreatorsPage />} />
-                    <Route path="/creators/:id" element={<CreatorProfilePage />} />
-                    <Route path="/messages" element={<MessagesPage />} />
-                    <Route path="/projects" element={<ProjectsPage />} />
-                    <Route path="/create-project" element={<CreateProjectPage />} />
-                    <Route path="/projects/:id" element={<ProjectDetailPage />} />
-                    <Route path="/settings" element={<Navigate to="/settings/team" replace />} />
-                    <Route path="/settings/team" element={<TeamPage />} />
-                    <Route path="/settings/profile" element={<ProfilePage />} />
-                    <Route path="/settings/notifications" element={<NotificationsPage />} />
-                    <Route path="/settings/billing" element={<BillingPage />} />
+      <BrowserRouter>
+        <AuthProvider>
+          <NotificationProvider>
+            <FavoritesProvider>
+              <MessagingProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    {/* Auth Routes (public) */}
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/auth/magic-link" element={<MagicLinkCallback />} />
+                    <Route path="/onboarding" element={<OnboardingPage />} />
                     
-                    {/* Admin Routes */}
-                    <Route path="/admin/requests" element={<AdminRequestsPage />} />
-                    <Route path="/admin/creators" element={<AdminCreatorsPage />} />
-                    <Route path="/admin/brands" element={<AdminBrandsPage />} />
-                  </Route>
+                    {/* Protected Routes with Main Layout */}
+                    <Route element={
+                      <ProtectedRoute>
+                        <MainLayout />
+                      </ProtectedRoute>
+                    }>
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/my-jobs" element={<MyJobsPage />} />
+                      <Route path="/my-requests" element={<MyRequestsPage />} />
+                      <Route path="/create-request" element={<CreateRequestPage />} />
+                      <Route path="/creators" element={<CreatorsPage />} />
+                      <Route path="/creators/:id" element={<CreatorProfilePage />} />
+                      <Route path="/messages" element={<MessagesPage />} />
+                      <Route path="/projects" element={<ProjectsPage />} />
+                      <Route path="/create-project" element={<CreateProjectPage />} />
+                      <Route path="/projects/:id" element={<ProjectDetailPage />} />
+                      <Route path="/settings" element={<Navigate to="/settings/team" replace />} />
+                      <Route path="/settings/team" element={<TeamPage />} />
+                      <Route path="/settings/profile" element={<ProfilePage />} />
+                      <Route path="/settings/notifications" element={<NotificationsPage />} />
+                      <Route path="/settings/billing" element={<BillingPage />} />
+                      
+                      {/* Admin Routes */}
+                      <Route path="/admin/requests" element={<AdminRequestsPage />} />
+                      <Route path="/admin/creators" element={<AdminCreatorsPage />} />
+                      <Route path="/admin/brands" element={<AdminBrandsPage />} />
+                    </Route>
 
-                  {/* Catch-all */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <ChatPanel />
-              </BrowserRouter>
-            </TooltipProvider>
-          </MessagingProvider>
-        </FavoritesProvider>
-      </NotificationProvider>
+                    {/* Catch-all */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <ChatPanel />
+                </TooltipProvider>
+              </MessagingProvider>
+            </FavoritesProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ThemeProvider>
   </QueryClientProvider>
 );
