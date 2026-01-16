@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, Video, DollarSign, Clock, FileText } from "lucide-react";
+import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Sheet,
@@ -16,6 +17,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { toast } from "sonner";
 
 interface Job {
   id: string;
@@ -92,10 +94,26 @@ interface JobDetailsSheetProps {
   job: Job | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onStatusChange: (jobId: string, newStatus: Job["status"]) => void;
 }
 
-const JobDetailsSheet = ({ job, open, onOpenChange }: JobDetailsSheetProps) => {
+const JobDetailsSheet = ({ job, open, onOpenChange, onStatusChange }: JobDetailsSheetProps) => {
   if (!job) return null;
+
+  const handleAccept = () => {
+    onStatusChange(job.id, "In Progress");
+    toast.success("Job accepted! Status changed to In Progress.");
+  };
+
+  const handleDecline = () => {
+    onStatusChange(job.id, "Rejected");
+    toast.info("Job declined.");
+    onOpenChange(false);
+  };
+
+  const handleSubmitDeliverable = () => {
+    toast.success("Deliverable submitted for review!");
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -165,6 +183,45 @@ const JobDetailsSheet = ({ job, open, onOpenChange }: JobDetailsSheetProps) => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            {job.status === "Submitted" && (
+              <div className="flex gap-3">
+                <Button onClick={handleAccept} className="flex-1">
+                  <Check className="h-4 w-4 mr-2" />
+                  Accept Job
+                </Button>
+                <Button variant="outline" onClick={handleDecline} className="flex-1">
+                  <X className="h-4 w-4 mr-2" />
+                  Decline
+                </Button>
+              </div>
+            )}
+
+            {job.status === "In Progress" && (
+              <Button onClick={handleSubmitDeliverable} className="w-full">
+                <Upload className="h-4 w-4 mr-2" />
+                Submit Deliverable
+              </Button>
+            )}
+
+            {job.status === "Approved" && (
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-4 text-center">
+                <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                  ✓ This job has been completed
+                </p>
+              </div>
+            )}
+
+            {job.status === "Rejected" && (
+              <div className="rounded-lg bg-red-50 dark:bg-red-950/30 p-4 text-center">
+                <p className="text-sm text-red-700 dark:text-red-400 font-medium">
+                  This job was declined
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
@@ -172,8 +229,19 @@ const JobDetailsSheet = ({ job, open, onOpenChange }: JobDetailsSheetProps) => {
 };
 
 const MyJobsPage = () => {
+  const [jobs, setJobs] = useState<Job[]>(mockJobs);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
+  const handleStatusChange = (jobId: string, newStatus: Job["status"]) => {
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId ? { ...job, status: newStatus } : job
+      )
+    );
+    setSelectedJob((prev) =>
+      prev?.id === jobId ? { ...prev, status: newStatus } : prev
+    );
+  };
   return (
     <div className="space-y-6">
       <div>
@@ -194,7 +262,7 @@ const MyJobsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockJobs.map((job) => (
+            {jobs.map((job) => (
               <TableRow
                 key={job.id}
                 className="hover:bg-muted/50 cursor-pointer"
@@ -234,6 +302,7 @@ const MyJobsPage = () => {
         job={selectedJob}
         open={selectedJob !== null}
         onOpenChange={(open) => !open && setSelectedJob(null)}
+        onStatusChange={handleStatusChange}
       />
     </div>
   );
