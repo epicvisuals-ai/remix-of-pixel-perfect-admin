@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMessaging } from "@/contexts/MessagingContext";
 import { TypingIndicator } from "./TypingIndicator";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
+import { MessageAttachment, Attachment, AttachmentPreview } from "./MessageAttachment";
+import { FileUploadButton } from "./FileUploadButton";
 import { cn } from "@/lib/utils";
 
 function formatTime(date: Date) {
@@ -37,6 +39,7 @@ export function ChatPanel() {
   } = useMessaging();
 
   const [newMessage, setNewMessage] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
@@ -55,9 +58,10 @@ export function ChatPanel() {
   }, [activeConversation, isOpen]);
 
   const handleSend = () => {
-    if (newMessage.trim()) {
-      sendMessage(newMessage);
+    if (newMessage.trim() || pendingAttachments.length > 0) {
+      sendMessage(newMessage, pendingAttachments.length > 0 ? pendingAttachments : undefined);
       setNewMessage("");
+      setPendingAttachments([]);
     }
   };
 
@@ -66,6 +70,14 @@ export function ChatPanel() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleFilesSelected = (attachments: Attachment[]) => {
+    setPendingAttachments((prev) => [...prev, ...attachments]);
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
   // Don't render floating panel on messages page
@@ -161,7 +173,14 @@ export function ChatPanel() {
                         : "bg-muted"
                     )}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    {message.content && <p className="text-sm">{message.content}</p>}
+                    {message.attachments?.map((attachment) => (
+                      <MessageAttachment
+                        key={attachment.id}
+                        attachment={attachment}
+                        isOwn={message.isOwn}
+                      />
+                    ))}
                     <div
                       className={cn(
                         "mt-1 flex items-center gap-1 text-xs",
@@ -191,9 +210,16 @@ export function ChatPanel() {
             </div>
           </ScrollArea>
 
+          {/* Attachment Preview */}
+          <AttachmentPreview
+            attachments={pendingAttachments}
+            onRemove={handleRemoveAttachment}
+          />
+
           {/* Input */}
           <div className="border-t border-border p-3">
             <div className="flex gap-2">
+              <FileUploadButton onFilesSelected={handleFilesSelected} />
               <Input
                 ref={inputRef}
                 placeholder="Type a message..."
@@ -202,7 +228,11 @@ export function ChatPanel() {
                 onKeyDown={handleKeyDown}
                 className="flex-1"
               />
-              <Button size="icon" onClick={handleSend} disabled={!newMessage.trim()}>
+              <Button 
+                size="icon" 
+                onClick={handleSend} 
+                disabled={!newMessage.trim() && pendingAttachments.length === 0}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
