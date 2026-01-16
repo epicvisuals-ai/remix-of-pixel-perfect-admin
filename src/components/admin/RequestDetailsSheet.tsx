@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   Image,
@@ -10,6 +10,10 @@ import {
   UserPlus,
   Send,
   MessageSquare,
+  Paperclip,
+  FileText,
+  X,
+  Download,
 } from "lucide-react";
 import {
   Sheet,
@@ -38,6 +42,14 @@ interface Creator {
   specialty: string;
 }
 
+interface Attachment {
+  id: string;
+  name: string;
+  type: "image" | "document";
+  url: string;
+  size: string;
+}
+
 interface Comment {
   id: string;
   authorId: string;
@@ -46,6 +58,7 @@ interface Comment {
   authorRole: "brand" | "creator";
   content: string;
   createdAt: Date;
+  attachments?: Attachment[];
 }
 
 interface Request {
@@ -75,7 +88,7 @@ const availableCreators: Creator[] = [
   { id: "c4", name: "Casey Taylor", specialty: "Photography", avatar: "" },
 ];
 
-// Mock comments
+// Mock comments with attachments
 const mockComments: Comment[] = [
   {
     id: "cm1",
@@ -90,8 +103,24 @@ const mockComments: Comment[] = [
     authorId: "c1",
     authorName: "Alex Morgan",
     authorRole: "creator",
-    content: "Thanks! I'll have the initial concepts ready by Friday. Should I focus more on the minimalist approach or the bold graphics?",
+    content: "Here are the initial concepts. Let me know your thoughts!",
     createdAt: new Date("2024-01-21T14:15:00"),
+    attachments: [
+      {
+        id: "att1",
+        name: "concept-v1.png",
+        type: "image",
+        url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+        size: "2.4 MB",
+      },
+      {
+        id: "att2",
+        name: "brand-guidelines.pdf",
+        type: "document",
+        url: "#",
+        size: "1.2 MB",
+      },
+    ],
   },
   {
     id: "cm3",
@@ -132,6 +161,12 @@ const getStatusIndex = (status: Request["status"]) => {
   return statusTimeline.findIndex((s) => s.status === status);
 };
 
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+};
+
 export function RequestDetailsSheet({
   request,
   open,
@@ -141,6 +176,8 @@ export function RequestDetailsSheet({
   const [assignedCreator, setAssignedCreator] = useState<Creator | null>(null);
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [newComment, setNewComment] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!request) return null;
 
@@ -154,8 +191,35 @@ export function RequestDetailsSheet({
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: Attachment[] = Array.from(files).map((file) => {
+      const isImage = file.type.startsWith("image/");
+      return {
+        id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        type: isImage ? "image" : "document",
+        url: isImage ? URL.createObjectURL(file) : "#",
+        size: formatFileSize(file.size),
+      };
+    });
+
+    setPendingAttachments([...pendingAttachments, ...newAttachments]);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removePendingAttachment = (id: string) => {
+    setPendingAttachments(pendingAttachments.filter((att) => att.id !== id));
+  };
+
   const handleSendComment = () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && pendingAttachments.length === 0) return;
     
     const comment: Comment = {
       id: `cm${Date.now()}`,
@@ -164,10 +228,12 @@ export function RequestDetailsSheet({
       authorRole: "brand",
       content: newComment.trim(),
       createdAt: new Date(),
+      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
     };
     
     setComments([...comments, comment]);
     setNewComment("");
+    setPendingAttachments([]);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -175,6 +241,42 @@ export function RequestDetailsSheet({
       e.preventDefault();
       handleSendComment();
     }
+  };
+
+  const AttachmentPreview = ({ attachment, isBrand }: { attachment: Attachment; isBrand: boolean }) => {
+    if (attachment.type === "image") {
+      return (
+        <div className="relative group mt-2">
+          <img
+            src={attachment.url}
+            alt={attachment.name}
+            className="rounded-lg max-w-[200px] max-h-[150px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => window.open(attachment.url, "_blank")}
+          />
+          <div className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity truncate">
+            {attachment.name}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`flex items-center gap-2 mt-2 p-2 rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+          isBrand ? "bg-primary-foreground/20" : "bg-background/50"
+        }`}
+        onClick={() => window.open(attachment.url, "_blank")}
+      >
+        <FileText className="h-4 w-4 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium truncate">{attachment.name}</p>
+          <p className={`text-xs ${isBrand ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+            {attachment.size}
+          </p>
+        </div>
+        <Download className="h-4 w-4 shrink-0" />
+      </div>
+    );
   };
 
   return (
@@ -411,7 +513,7 @@ export function RequestDetailsSheet({
             </div>
 
             <div className="border rounded-lg overflow-hidden">
-              <ScrollArea className="h-[200px] p-3">
+              <ScrollArea className="h-[280px] p-3">
                 {comments.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                     <MessageSquare className="h-8 w-8 mb-2 opacity-50" />
@@ -451,7 +553,20 @@ export function RequestDetailsSheet({
                                 : "bg-muted"
                             }`}
                           >
-                            <p className="text-sm">{comment.content}</p>
+                            {comment.content && (
+                              <p className="text-sm">{comment.content}</p>
+                            )}
+                            {comment.attachments && comment.attachments.length > 0 && (
+                              <div className={`${comment.content ? "mt-2" : ""} space-y-2`}>
+                                {comment.attachments.map((attachment) => (
+                                  <AttachmentPreview
+                                    key={attachment.id}
+                                    attachment={attachment}
+                                    isBrand={comment.authorRole === "brand"}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {comment.authorName} •{" "}
@@ -464,8 +579,57 @@ export function RequestDetailsSheet({
                 )}
               </ScrollArea>
 
+              {/* Pending attachments preview */}
+              {pendingAttachments.length > 0 && (
+                <div className="border-t p-2 bg-muted/20">
+                  <div className="flex flex-wrap gap-2">
+                    {pendingAttachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center gap-2 bg-muted rounded-lg px-2 py-1"
+                      >
+                        {attachment.type === "image" ? (
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name}
+                            className="h-8 w-8 rounded object-cover"
+                          />
+                        ) : (
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className="text-xs text-foreground max-w-[100px] truncate">
+                          {attachment.name}
+                        </span>
+                        <button
+                          onClick={() => removePendingAttachment(attachment.id)}
+                          className="p-0.5 hover:bg-background rounded"
+                        >
+                          <X className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="border-t p-3 bg-muted/30">
                 <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.txt"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="shrink-0"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
                   <Input
                     placeholder="Type a message..."
                     value={newComment}
@@ -476,7 +640,7 @@ export function RequestDetailsSheet({
                   <Button
                     size="icon"
                     onClick={handleSendComment}
-                    disabled={!newComment.trim()}
+                    disabled={!newComment.trim() && pendingAttachments.length === 0}
                   >
                     <Send className="h-4 w-4" />
                   </Button>
