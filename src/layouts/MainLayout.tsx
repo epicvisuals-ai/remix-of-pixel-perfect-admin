@@ -30,14 +30,14 @@ export default function MainLayout() {
 
   return (
     <div className="flex min-h-screen w-full bg-card">
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Fixed */}
       <aside
         className={cn(
-          "hidden shrink-0 bg-card md:block transition-all duration-300 ease-in-out overflow-hidden",
+          "hidden shrink-0 bg-card md:block transition-all duration-300 ease-in-out",
           desktopSidebarOpen ? "w-[280px]" : "w-0"
         )}
       >
-        <div className="w-[280px]">
+        <div className="fixed top-0 left-0 h-screen w-[280px] overflow-y-auto">
           <MainSidebar
             onToggleSidebar={handleToggleDesktopSidebar}
             isDesktopSidebarOpen={desktopSidebarOpen}
