@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { Heart } from "lucide-react";
 import { CreatorCard } from "@/components/creators/CreatorCard";
 import { WorkedWithCard } from "@/components/creators/WorkedWithCard";
 import { CreatorSearch } from "@/components/creators/CreatorSearch";
+import { FavoriteCreatorCard } from "@/components/creators/FavoriteCreatorCard";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import {
   Carousel,
   CarouselContent,
@@ -39,6 +42,7 @@ const allCreators = [
   {
     id: "4",
     name: "Alex Kim",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop",
     portfolioImage: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop",
     specialty: "3D Art",
     rating: 4.9,
@@ -46,6 +50,7 @@ const allCreators = [
   {
     id: "5",
     name: "Jordan Lee",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop",
     portfolioImage: "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=400&h=500&fit=crop",
     specialty: "Photography",
     rating: 4.8,
@@ -53,6 +58,7 @@ const allCreators = [
   {
     id: "6",
     name: "Taylor Swift",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
     portfolioImage: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&h=500&fit=crop",
     specialty: "Illustration",
     rating: 5.0,
@@ -60,6 +66,7 @@ const allCreators = [
   {
     id: "7",
     name: "Morgan Davis",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop",
     portfolioImage: "https://images.unsplash.com/photo-1561998338-13ad7883b20f?w=400&h=500&fit=crop",
     specialty: "Video",
     rating: 4.7,
@@ -67,6 +74,7 @@ const allCreators = [
   {
     id: "8",
     name: "Casey Brown",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop",
     portfolioImage: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=400&h=500&fit=crop",
     specialty: "Motion",
     rating: 4.6,
@@ -74,6 +82,7 @@ const allCreators = [
   {
     id: "9",
     name: "Riley Wilson",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop",
     portfolioImage: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=500&fit=crop",
     specialty: "Photography",
     rating: 4.8,
@@ -109,11 +118,16 @@ const discoverStyles = [
 
 export default function CreatorsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { favorites } = useFavorites();
 
   const filteredCreators = allCreators.filter(
     (creator) =>
       creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       creator.specialty.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const favoriteCreators = allCreators.filter((creator) =>
+    favorites.includes(creator.id)
   );
 
   return (
@@ -134,6 +148,30 @@ export default function CreatorsPage() {
           placeholder="Search by name or specialty..."
         />
       </div>
+
+      {/* Favorites Section */}
+      {favoriteCreators.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Heart className="h-5 w-5 fill-red-500 text-red-500" />
+            <h2 className="text-lg font-medium text-foreground">
+              Saved Creators
+            </h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {favoriteCreators.map((creator) => (
+              <FavoriteCreatorCard
+                key={creator.id}
+                id={creator.id}
+                name={creator.name}
+                avatar={creator.avatar}
+                specialty={creator.specialty}
+                rating={creator.rating}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Worked With Section */}
       {workedWithCreators.length > 0 && (
