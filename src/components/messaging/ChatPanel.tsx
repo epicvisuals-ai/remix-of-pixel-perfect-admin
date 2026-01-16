@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { X, Send, ArrowLeft, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +36,10 @@ export function ChatPanel() {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const location = useLocation();
 
   const activeConv = conversations.find((c) => c.id === activeConversation);
+  const isOnMessagesPage = location.pathname === "/messages";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -61,6 +64,11 @@ export function ChatPanel() {
       handleSend();
     }
   };
+
+  // Don't render floating panel on messages page
+  if (isOnMessagesPage) {
+    return null;
+  }
 
   if (!isOpen) {
     return (
