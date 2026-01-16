@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X } from "lucide-react";
+import { useState, useRef } from "react";
+import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2 } from "lucide-react";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -19,16 +20,24 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
+interface Deliverable {
+  id: string;
+  name: string;
+  size: string;
+  uploadedAt: Date;
+}
+
 interface Job {
   id: string;
   company: string;
   type: "Image" | "Video";
   budget: number;
   status: "Submitted" | "In Progress" | "Approved" | "Rejected";
-  createdAt: string;
+  createdAt: Date;
   brief: string;
   tone: string;
   deadline: string;
+  deliverables: Deliverable[];
 }
 
 // Mock data
@@ -39,10 +48,11 @@ const mockJobs: Job[] = [
     type: "Image",
     budget: 250,
     status: "Submitted",
-    createdAt: "Jan 20, 2024",
+    createdAt: new Date("2024-01-20"),
     brief: "Need a hero banner for our new SaaS product launch. Modern, clean, with abstract tech elements. Should convey innovation and trust.",
     tone: "Corporate",
     deadline: "Feb 15",
+    deliverables: [],
   },
   {
     id: "req-003",
@@ -50,10 +60,11 @@ const mockJobs: Job[] = [
     type: "Image",
     budget: 350,
     status: "In Progress",
-    createdAt: "Jan 18, 2024",
+    createdAt: new Date("2024-01-18"),
     brief: "Create a series of social media graphics for our upcoming product launch campaign. Need 5 variations for different platforms.",
     tone: "Professional",
     deadline: "Feb 20",
+    deliverables: [],
   },
   {
     id: "req-004",
@@ -61,12 +72,21 @@ const mockJobs: Job[] = [
     type: "Video",
     budget: 400,
     status: "Approved",
-    createdAt: "Jan 15, 2024",
+    createdAt: new Date("2024-01-15"),
     brief: "30-second promotional video for our mobile app. Should be energetic and appeal to young professionals.",
     tone: "Casual",
     deadline: "Feb 28",
+    deliverables: [
+      { id: "del-1", name: "promo-video-final.mp4", size: "24.5 MB", uploadedAt: new Date("2024-02-10") },
+    ],
   },
 ];
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+};
 
 const getStatusBadgeVariant = (status: Job["status"]) => {
   switch (status) {
@@ -95,9 +115,20 @@ interface JobDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onStatusChange: (jobId: string, newStatus: Job["status"]) => void;
+  onAddDeliverable: (jobId: string, deliverable: Deliverable) => void;
+  onRemoveDeliverable: (jobId: string, deliverableId: string) => void;
 }
 
-const JobDetailsSheet = ({ job, open, onOpenChange, onStatusChange }: JobDetailsSheetProps) => {
+const JobDetailsSheet = ({ 
+  job, 
+  open, 
+  onOpenChange, 
+  onStatusChange,
+  onAddDeliverable,
+  onRemoveDeliverable,
+}: JobDetailsSheetProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!job) return null;
 
   const handleAccept = () => {
@@ -112,7 +143,37 @@ const JobDetailsSheet = ({ job, open, onOpenChange, onStatusChange }: JobDetails
   };
 
   const handleSubmitDeliverable = () => {
+    if (job.deliverables.length === 0) {
+      toast.error("Please upload at least one file before submitting.");
+      return;
+    }
     toast.success("Deliverable submitted for review!");
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const newDeliverable: Deliverable = {
+        id: `del-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        size: formatFileSize(file.size),
+        uploadedAt: new Date(),
+      };
+      onAddDeliverable(job.id, newDeliverable);
+      toast.success(`Uploaded: ${file.name}`);
+    });
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveFile = (deliverableId: string) => {
+    onRemoveDeliverable(job.id, deliverableId);
+    toast.info("File removed.");
   };
 
   return (
@@ -128,7 +189,9 @@ const JobDetailsSheet = ({ job, open, onOpenChange, onStatusChange }: JobDetails
               {job.status}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">Created {job.createdAt}</p>
+          <p className="text-sm text-muted-foreground">
+            Created {format(job.createdAt, "MMM d, yyyy")}
+          </p>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
@@ -183,6 +246,83 @@ const JobDetailsSheet = ({ job, open, onOpenChange, onStatusChange }: JobDetails
               </div>
             </CardContent>
           </Card>
+
+          {/* Deliverables Upload Card - Show for In Progress and Approved */}
+          {(job.status === "In Progress" || job.status === "Approved") && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Deliverables
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Upload Area - Only show for In Progress */}
+                {job.status === "In Progress" && (
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      accept="image/*,video/*,.pdf,.zip,.psd,.ai,.fig"
+                    />
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium text-foreground">
+                      Click to upload files
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Images, videos, PDFs, or design files
+                    </p>
+                  </div>
+                )}
+
+                {/* Uploaded Files List */}
+                {job.deliverables.length > 0 && (
+                  <div className="space-y-2">
+                    {job.deliverables.map((deliverable) => (
+                      <div
+                        key={deliverable.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {deliverable.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {deliverable.size} • {format(deliverable.uploadedAt, "MMM d, yyyy")}
+                            </p>
+                          </div>
+                        </div>
+                        {job.status === "In Progress" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={() => handleRemoveFile(deliverable.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {job.deliverables.length === 0 && job.status === "Approved" && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No deliverables uploaded
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Action Buttons */}
           <div className="space-y-3">
@@ -242,6 +382,37 @@ const MyJobsPage = () => {
       prev?.id === jobId ? { ...prev, status: newStatus } : prev
     );
   };
+
+  const handleAddDeliverable = (jobId: string, deliverable: Deliverable) => {
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId
+          ? { ...job, deliverables: [...job.deliverables, deliverable] }
+          : job
+      )
+    );
+    setSelectedJob((prev) =>
+      prev?.id === jobId
+        ? { ...prev, deliverables: [...prev.deliverables, deliverable] }
+        : prev
+    );
+  };
+
+  const handleRemoveDeliverable = (jobId: string, deliverableId: string) => {
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId
+          ? { ...job, deliverables: job.deliverables.filter((d) => d.id !== deliverableId) }
+          : job
+      )
+    );
+    setSelectedJob((prev) =>
+      prev?.id === jobId
+        ? { ...prev, deliverables: prev.deliverables.filter((d) => d.id !== deliverableId) }
+        : prev
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -290,7 +461,7 @@ const MyJobsPage = () => {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {job.createdAt}
+                  {format(job.createdAt, "MMM d, yyyy")}
                 </TableCell>
               </TableRow>
             ))}
@@ -303,6 +474,8 @@ const MyJobsPage = () => {
         open={selectedJob !== null}
         onOpenChange={(open) => !open && setSelectedJob(null)}
         onStatusChange={handleStatusChange}
+        onAddDeliverable={handleAddDeliverable}
+        onRemoveDeliverable={handleRemoveDeliverable}
       />
     </div>
   );
