@@ -11,6 +11,7 @@ import {
   Search,
   MessageCircle,
   ChevronDown,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -38,6 +39,9 @@ const settingsItems: NavItem[] = [
   { icon: User, label: "Profile", path: "/settings/profile" },
   { icon: CreditCard, label: "Billing", path: "/settings/billing" },
 ];
+
+// Mock: In real app, this would come from auth context
+const currentUserRole = "CREATOR";
 
 interface MainSidebarProps {
   onClose?: () => void;
@@ -69,6 +73,7 @@ export function MainSidebar({
 
   const isActive = (path: string) => location.pathname === path;
   const isDashboardActive = location.pathname === "/" || location.pathname === "/dashboard";
+  const isJobsActive = location.pathname === "/my-jobs";
 
   return (
     <div className="flex min-h-screen flex-col bg-sidebar">
@@ -114,6 +119,22 @@ export function MainSidebar({
             <LayoutDashboard className="h-5 w-5" />
             <span>Dashboard</span>
           </Button>
+
+          {/* Jobs - Creator only */}
+          {currentUserRole === "CREATOR" && (
+            <Button
+              variant={isJobsActive ? "sidebarActive" : "sidebar"}
+              size="sidebar"
+              onClick={() => handleNavClick("/my-jobs")}
+              className={cn(
+                "gap-3 rounded-lg",
+                isJobsActive && "bg-sidebar-accent"
+              )}
+            >
+              <Briefcase className="h-5 w-5" />
+              <span>Jobs</span>
+            </Button>
+          )}
 
           {/* Settings with submenu */}
           <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>

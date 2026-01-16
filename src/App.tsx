@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
+import MyJobsPage from "./pages/MyJobsPage";
 import TeamPage from "./pages/settings/TeamPage";
 import ProfilePage from "./pages/settings/ProfilePage";
 import BillingPage from "./pages/settings/BillingPage";
@@ -31,6 +32,7 @@ const App = () => (
             <Route element={<MainLayout />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/my-jobs" element={<MyJobsPage />} />
               <Route path="/settings" element={<Navigate to="/settings/team" replace />} />
               <Route path="/settings/team" element={<TeamPage />} />
               <Route path="/settings/profile" element={<ProfilePage />} />
