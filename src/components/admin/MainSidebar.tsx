@@ -14,6 +14,7 @@ import {
   Briefcase,
   FileText,
   Plus,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -39,6 +40,7 @@ interface NavItem {
 const settingsItems: NavItem[] = [
   { icon: Users, label: "Team", path: "/settings/team" },
   { icon: User, label: "Profile", path: "/settings/profile" },
+  { icon: Bell, label: "Notifications", path: "/settings/notifications" },
   { icon: CreditCard, label: "Billing", path: "/settings/billing" },
 ];
 
