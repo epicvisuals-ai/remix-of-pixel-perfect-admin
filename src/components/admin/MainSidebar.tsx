@@ -17,6 +17,8 @@ import {
   Bell,
   FolderKanban,
   Palette,
+  Shield,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -32,6 +34,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { type AppRole } from "@/types/roles";
 
 interface NavItem {
   icon: React.ElementType;
@@ -47,7 +50,7 @@ const settingsItems: NavItem[] = [
 ];
 
 // Mock: In real app, this would come from auth context
-const currentUserRole: "CREATOR" | "BRAND" = "BRAND";
+const currentUserRole: AppRole = "superadmin";
 
 interface MainSidebarProps {
   onClose?: () => void;
@@ -85,7 +88,12 @@ export function MainSidebar({
   const isCreatorsActive = location.pathname === "/creators" || location.pathname.startsWith("/creators/");
   const isMessagesActive = location.pathname === "/messages";
   const isProjectsActive = location.pathname === "/projects";
-
+  
+  // Admin routes
+  const isAdminRequestsActive = location.pathname === "/admin/requests";
+  const isAdminCreatorsActive = location.pathname === "/admin/creators";
+  const isAdminBrandsActive = location.pathname === "/admin/brands";
+  const isSuperadmin = currentUserRole === "superadmin";
   return (
     <div className="flex min-h-screen flex-col bg-sidebar">
       {/* Header with Logo */}
@@ -132,7 +140,7 @@ export function MainSidebar({
           </Button>
 
           {/* Jobs - Creator only */}
-          {currentUserRole === "CREATOR" && (
+          {currentUserRole === "creator" && (
             <Button
               variant={isJobsActive ? "sidebarActive" : "sidebar"}
               size="sidebar"
@@ -147,8 +155,55 @@ export function MainSidebar({
             </Button>
           )}
 
+          {/* Superadmin only section */}
+          {isSuperadmin && (
+            <>
+              <div className="pt-4 pb-2 px-3">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Admin
+                </span>
+              </div>
+              <Button
+                variant={isAdminRequestsActive ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                onClick={() => handleNavClick("/admin/requests")}
+                className={cn(
+                  "gap-3 rounded-lg",
+                  isAdminRequestsActive && "bg-sidebar-accent"
+                )}
+              >
+                <FileText className="h-5 w-5" />
+                <span>Requests</span>
+              </Button>
+              <Button
+                variant={isAdminCreatorsActive ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                onClick={() => handleNavClick("/admin/creators")}
+                className={cn(
+                  "gap-3 rounded-lg",
+                  isAdminCreatorsActive && "bg-sidebar-accent"
+                )}
+              >
+                <Palette className="h-5 w-5" />
+                <span>Creators</span>
+              </Button>
+              <Button
+                variant={isAdminBrandsActive ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                onClick={() => handleNavClick("/admin/brands")}
+                className={cn(
+                  "gap-3 rounded-lg",
+                  isAdminBrandsActive && "bg-sidebar-accent"
+                )}
+              >
+                <Building2 className="h-5 w-5" />
+                <span>Brands</span>
+              </Button>
+            </>
+          )}
+
           {/* Requests - Brand only */}
-          {currentUserRole === "BRAND" && (
+          {currentUserRole === "brand" && (
             <>
               <Button
                 variant={isRequestsActive ? "sidebarActive" : "sidebar"}
