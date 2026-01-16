@@ -194,6 +194,49 @@ export function RequestDetailsSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
+  // All useCallback hooks MUST be declared before any conditional returns
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === dropZoneRef.current) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      const newAttachments: Attachment[] = fileArray.map((file) => {
+        const isImage = file.type.startsWith("image/");
+        return {
+          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          type: isImage ? "image" : "document",
+          url: isImage ? URL.createObjectURL(file) : "#",
+          size: formatFileSize(file.size),
+        };
+      });
+      setPendingAttachments((prev) => [...prev, ...newAttachments]);
+    }
+  }, []);
+
+  // Early return AFTER all hooks are declared
   if (!request) return null;
 
   const currentStatusIndex = getStatusIndex(request.status);
@@ -234,36 +277,6 @@ export function RequestDetailsSheet({
       fileInputRef.current.value = "";
     }
   };
-
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.currentTarget === dropZoneRef.current) {
-      setIsDragging(false);
-    }
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      processFiles(files);
-    }
-  }, []);
 
   const removePendingAttachment = (id: string) => {
     setPendingAttachments(pendingAttachments.filter((att) => att.id !== id));
