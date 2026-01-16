@@ -10,6 +10,7 @@ import { TypingIndicator } from "./TypingIndicator";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
 import { MessageAttachment, Attachment, AttachmentPreview } from "./MessageAttachment";
 import { FileUploadButton } from "./FileUploadButton";
+import { EmojiPicker } from "./EmojiPicker";
 import { cn } from "@/lib/utils";
 
 function formatTime(date: Date) {
@@ -220,6 +221,7 @@ export function ChatPanel() {
           <div className="border-t border-border p-3">
             <div className="flex gap-2">
               <FileUploadButton onFilesSelected={handleFilesSelected} />
+              <EmojiPicker onEmojiSelect={(emoji) => setNewMessage((prev) => prev + emoji)} />
               <Input
                 ref={inputRef}
                 placeholder="Type a message..."
