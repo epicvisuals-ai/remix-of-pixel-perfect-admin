@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   Image,
@@ -14,6 +14,10 @@ import {
   FileText,
   X,
   Download,
+  ZoomIn,
+  ChevronLeft,
+  ChevronRight,
+  Upload,
 } from "lucide-react";
 import {
   Sheet,
@@ -21,6 +25,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -34,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface Creator {
   id: string;
@@ -177,11 +187,21 @@ export function RequestDetailsSheet({
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [newComment, setNewComment] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<Attachment[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   if (!request) return null;
 
   const currentStatusIndex = getStatusIndex(request.status);
+
+  // Collect all image attachments for lightbox navigation
+  const allImageAttachments = comments.flatMap(
+    (comment) => comment.attachments?.filter((a) => a.type === "image") || []
+  );
 
   const handleAssignCreator = () => {
     const creator = availableCreators.find((c) => c.id === selectedCreatorId);
@@ -191,11 +211,9 @@ export function RequestDetailsSheet({
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newAttachments: Attachment[] = Array.from(files).map((file) => {
+  const processFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const newAttachments: Attachment[] = fileArray.map((file) => {
       const isImage = file.type.startsWith("image/");
       return {
         id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -205,14 +223,47 @@ export function RequestDetailsSheet({
         size: formatFileSize(file.size),
       };
     });
+    setPendingAttachments((prev) => [...prev, ...newAttachments]);
+  };
 
-    setPendingAttachments([...pendingAttachments, ...newAttachments]);
-    
-    // Reset input
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    processFiles(files);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === dropZoneRef.current) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFiles(files);
+    }
+  }, []);
 
   const removePendingAttachment = (id: string) => {
     setPendingAttachments(pendingAttachments.filter((att) => att.id !== id));
@@ -243,6 +294,29 @@ export function RequestDetailsSheet({
     }
   };
 
+  const openLightbox = (attachment: Attachment) => {
+    const imageIndex = allImageAttachments.findIndex((a) => a.id === attachment.id);
+    if (imageIndex !== -1) {
+      setLightboxImages(allImageAttachments);
+      setLightboxIndex(imageIndex);
+      setLightboxOpen(true);
+    }
+  };
+
+  const navigateLightbox = (direction: "prev" | "next") => {
+    if (direction === "prev") {
+      setLightboxIndex((prev) => (prev > 0 ? prev - 1 : lightboxImages.length - 1));
+    } else {
+      setLightboxIndex((prev) => (prev < lightboxImages.length - 1 ? prev + 1 : 0));
+    }
+  };
+
+  const handleLightboxKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") navigateLightbox("prev");
+    if (e.key === "ArrowRight") navigateLightbox("next");
+    if (e.key === "Escape") setLightboxOpen(false);
+  };
+
   const AttachmentPreview = ({ attachment, isBrand }: { attachment: Attachment; isBrand: boolean }) => {
     if (attachment.type === "image") {
       return (
@@ -251,8 +325,13 @@ export function RequestDetailsSheet({
             src={attachment.url}
             alt={attachment.name}
             className="rounded-lg max-w-[200px] max-h-[150px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={() => window.open(attachment.url, "_blank")}
+            onClick={() => openLightbox(attachment)}
           />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-black/50 rounded-full p-2">
+              <ZoomIn className="h-5 w-5 text-white" />
+            </div>
+          </div>
           <div className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity truncate">
             {attachment.name}
           </div>
@@ -512,7 +591,24 @@ export function RequestDetailsSheet({
               </Badge>
             </div>
 
-            <div className="border rounded-lg overflow-hidden">
+            <div
+              ref={dropZoneRef}
+              className={`border rounded-lg overflow-hidden transition-colors ${
+                isDragging ? "border-primary border-2 bg-primary/5" : ""
+              }`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              {isDragging && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg">
+                  <Upload className="h-10 w-10 text-primary mb-2 animate-fade-in" />
+                  <p className="text-sm font-medium text-primary">Drop files here</p>
+                  <p className="text-xs text-muted-foreground">Images and documents</p>
+                </div>
+              )}
+              
               <ScrollArea className="h-[280px] p-3">
                 {comments.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -627,11 +723,12 @@ export function RequestDetailsSheet({
                     size="icon"
                     onClick={() => fileInputRef.current?.click()}
                     className="shrink-0"
+                    title="Attach files"
                   >
                     <Paperclip className="h-4 w-4" />
                   </Button>
                   <Input
-                    placeholder="Type a message..."
+                    placeholder="Type a message or drop files..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     onKeyDown={handleKeyPress}
@@ -645,6 +742,9 @@ export function RequestDetailsSheet({
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Drag & drop files here or click <Paperclip className="h-3 w-3 inline" /> to attach
+                </p>
               </div>
             </div>
           </div>
@@ -662,6 +762,82 @@ export function RequestDetailsSheet({
             )}
           </div>
         </div>
+
+        {/* Image Lightbox */}
+        <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+          <DialogContent 
+            className="max-w-4xl w-full h-[90vh] p-0 bg-black/95 border-none"
+            onKeyDown={handleLightboxKeyDown}
+          >
+            <VisuallyHidden>
+              <DialogTitle>Image Preview</DialogTitle>
+            </VisuallyHidden>
+            
+            {lightboxImages.length > 0 && (
+              <div className="relative w-full h-full flex items-center justify-center">
+                {/* Close button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-4 right-4 z-20 text-white hover:bg-white/20"
+                  onClick={() => setLightboxOpen(false)}
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+
+                {/* Navigation arrows */}
+                {lightboxImages.length > 1 && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute left-4 z-20 text-white hover:bg-white/20 h-12 w-12"
+                      onClick={() => navigateLightbox("prev")}
+                    >
+                      <ChevronLeft className="h-8 w-8" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-4 z-20 text-white hover:bg-white/20 h-12 w-12"
+                      onClick={() => navigateLightbox("next")}
+                    >
+                      <ChevronRight className="h-8 w-8" />
+                    </Button>
+                  </>
+                )}
+
+                {/* Image */}
+                <img
+                  src={lightboxImages[lightboxIndex]?.url}
+                  alt={lightboxImages[lightboxIndex]?.name}
+                  className="max-w-full max-h-full object-contain animate-scale-in"
+                />
+
+                {/* Image info */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-lg flex items-center gap-4">
+                  <span className="text-sm font-medium">
+                    {lightboxImages[lightboxIndex]?.name}
+                  </span>
+                  {lightboxImages.length > 1 && (
+                    <span className="text-xs text-white/70">
+                      {lightboxIndex + 1} / {lightboxImages.length}
+                    </span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-white/20 h-8"
+                    onClick={() => window.open(lightboxImages[lightboxIndex]?.url, "_blank")}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Download
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );
