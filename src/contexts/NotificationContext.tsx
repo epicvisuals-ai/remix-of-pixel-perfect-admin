@@ -15,6 +15,12 @@ export interface Notification {
   creatorAvatar?: string;
 }
 
+export interface EmailDigestSettings {
+  enabled: boolean;
+  frequency: "instant" | "hourly" | "daily" | "weekly";
+  email: string;
+}
+
 export interface NotificationPreferences {
   types: {
     message: boolean;
@@ -26,7 +32,9 @@ export interface NotificationPreferences {
     inApp: boolean;
     sound: boolean;
     browser: boolean;
+    email: boolean;
   };
+  emailDigest: EmailDigestSettings;
 }
 
 const defaultPreferences: NotificationPreferences = {
@@ -40,6 +48,12 @@ const defaultPreferences: NotificationPreferences = {
     inApp: true,
     sound: true,
     browser: false,
+    email: false,
+  },
+  emailDigest: {
+    enabled: false,
+    frequency: "daily",
+    email: "",
   },
 };
 
