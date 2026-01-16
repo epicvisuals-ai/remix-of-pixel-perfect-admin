@@ -23,6 +23,11 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+  TeamMemberAssignment,
+  TeamMember,
+  ProjectRole,
+} from "@/components/projects/TeamMemberAssignment";
 
 interface Deliverable {
   id: string;
@@ -70,6 +75,21 @@ const CreateProjectPage = () => {
     { id: "1", name: "", description: "" },
   ]);
   const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  const handleAddTeamMember = (member: TeamMember) => {
+    setTeamMembers([...teamMembers, member]);
+  };
+
+  const handleRemoveTeamMember = (memberId: string) => {
+    setTeamMembers(teamMembers.filter((m) => m.id !== memberId));
+  };
+
+  const handleUpdateTeamMemberRole = (memberId: string, role: ProjectRole) => {
+    setTeamMembers(
+      teamMembers.map((m) => (m.id === memberId ? { ...m, role } : m))
+    );
+  };
 
   const addDeliverable = () => {
     setDeliverables([
@@ -398,6 +418,14 @@ const CreateProjectPage = () => {
             ))}
           </div>
         </div>
+
+        {/* Team Members */}
+        <TeamMemberAssignment
+          teamMembers={teamMembers}
+          onAddMember={handleAddTeamMember}
+          onRemoveMember={handleRemoveTeamMember}
+          onUpdateRole={handleUpdateTeamMemberRole}
+        />
 
         {/* Reference Files */}
         <div className="space-y-4">
