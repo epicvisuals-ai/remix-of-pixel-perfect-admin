@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import MyJobsPage from "./pages/MyJobsPage";
@@ -26,10 +27,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <NotificationProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <FavoritesProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <Routes>
               {/* Auth Routes */}
               <Route path="/auth" element={<AuthPage />} />
@@ -56,9 +58,10 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </NotificationProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+      </FavoritesProvider>
+    </NotificationProvider>
+  </ThemeProvider>
+</QueryClientProvider>
 );
 
 export default App;

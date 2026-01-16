@@ -1,9 +1,92 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, MapPin, Calendar, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { FavoriteButton } from "@/components/creators/FavoriteButton";
+import { ReviewCard } from "@/components/creators/ReviewCard";
+
+// Mock reviews data
+const reviewsData: Record<string, Array<{
+  id: string;
+  reviewerName: string;
+  reviewerAvatar: string;
+  reviewerCompany: string;
+  rating: number;
+  date: string;
+  content: string;
+  projectType: string;
+}>> = {
+  "4": [
+    {
+      id: "1",
+      reviewerName: "Sarah Mitchell",
+      reviewerAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+      reviewerCompany: "TechStart Inc.",
+      rating: 5,
+      date: "Dec 2025",
+      content: "Alex delivered exceptional 3D renders for our product launch. The attention to detail was outstanding, and they were incredibly responsive throughout the project. Would definitely work with them again!",
+      projectType: "Product Visualization",
+    },
+    {
+      id: "2",
+      reviewerName: "Michael Chen",
+      reviewerAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+      reviewerCompany: "Creative Agency Co",
+      rating: 5,
+      date: "Nov 2025",
+      content: "Incredible work on our brand animation. Alex understood our vision perfectly and brought it to life in ways we couldn't have imagined. Highly recommended!",
+      projectType: "Motion Graphics",
+    },
+    {
+      id: "3",
+      reviewerName: "Emily Davis",
+      reviewerAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+      reviewerCompany: "Luxe Brands",
+      rating: 4,
+      date: "Oct 2025",
+      content: "Great communication and professional delivery. The 3D models exceeded our expectations and really elevated our marketing materials.",
+      projectType: "3D Modeling",
+    },
+  ],
+  "5": [
+    {
+      id: "1",
+      reviewerName: "David Park",
+      reviewerAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+      reviewerCompany: "Fashion Forward",
+      rating: 5,
+      date: "Jan 2026",
+      content: "Jordan's photography captured exactly what we needed for our campaign. Professional, creative, and a pleasure to work with.",
+      projectType: "Commercial Photography",
+    },
+    {
+      id: "2",
+      reviewerName: "Lisa Wong",
+      reviewerAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop",
+      reviewerCompany: "Startup Hub",
+      rating: 5,
+      date: "Dec 2025",
+      content: "Amazing editorial shots that perfectly represented our brand story. Jordan has an incredible eye for composition and lighting.",
+      projectType: "Editorial",
+    },
+  ],
+};
+
+const defaultReviews = [
+  {
+    id: "1",
+    reviewerName: "Alex Johnson",
+    reviewerAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+    reviewerCompany: "Design Studio",
+    rating: 5,
+    date: "Dec 2025",
+    content: "Fantastic work! Delivered on time and exceeded all expectations. Would highly recommend to anyone looking for quality creative work.",
+    projectType: "Branding",
+  },
+];
 
 // Mock data - in real app, this would come from API
 const creatorsData: Record<string, {
@@ -89,8 +172,11 @@ const defaultCreator = {
 export default function CreatorProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showAllReviews, setShowAllReviews] = useState(false);
   
   const creator = id && creatorsData[id] ? creatorsData[id] : defaultCreator;
+  const reviews = id && reviewsData[id] ? reviewsData[id] : defaultReviews;
+  const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 2);
   
   const initials = creator.name
     .split(" ")
@@ -156,6 +242,7 @@ export default function CreatorProfilePage() {
         </div>
 
         <div className="flex gap-3 pt-2 md:pt-0">
+          <FavoriteButton creatorId={creator.id} />
           <Button variant="outline" size="sm" className="gap-2">
             <MessageCircle className="h-4 w-4" />
             Message
@@ -222,6 +309,42 @@ export default function CreatorProfilePage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium text-foreground">
+            Client Reviews ({reviews.length})
+          </h2>
+          <div className="flex items-center gap-1">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium">{creator.rating}</span>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {displayedReviews.map((review) => (
+            <ReviewCard
+              key={review.id}
+              reviewerName={review.reviewerName}
+              reviewerAvatar={review.reviewerAvatar}
+              reviewerCompany={review.reviewerCompany}
+              rating={review.rating}
+              date={review.date}
+              content={review.content}
+              projectType={review.projectType}
+            />
+          ))}
+        </div>
+        {reviews.length > 2 && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setShowAllReviews(!showAllReviews)}
+          >
+            {showAllReviews ? "Show Less" : `View All ${reviews.length} Reviews`}
+          </Button>
+        )}
       </div>
 
       {/* CTA */}
