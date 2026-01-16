@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send } from "lucide-react";
+import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send, Circle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -134,6 +134,77 @@ const TypeIcon = ({ type }: { type: Job["type"] }) => {
   return <Image className="h-4 w-4 text-muted-foreground" />;
 };
 
+const STATUS_STEPS = ["Submitted", "In Progress", "Approved"] as const;
+
+const getStepStatus = (currentStatus: Job["status"], step: typeof STATUS_STEPS[number]): "completed" | "current" | "upcoming" | "rejected" => {
+  if (currentStatus === "Rejected") {
+    if (step === "Submitted") return "completed";
+    return "rejected";
+  }
+  
+  const currentIndex = STATUS_STEPS.indexOf(currentStatus as typeof STATUS_STEPS[number]);
+  const stepIndex = STATUS_STEPS.indexOf(step);
+  
+  if (stepIndex < currentIndex) return "completed";
+  if (stepIndex === currentIndex) return "current";
+  return "upcoming";
+};
+
+const StatusTimeline = ({ status }: { status: Job["status"] }) => {
+  return (
+    <div className="flex items-center justify-between">
+      {STATUS_STEPS.map((step, index) => {
+        const stepStatus = getStepStatus(status, step);
+        const isLast = index === STATUS_STEPS.length - 1;
+        
+        return (
+          <div key={step} className="flex items-center flex-1">
+            <div className="flex flex-col items-center">
+              <div
+                className={`
+                  w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
+                  ${stepStatus === "completed" ? "bg-green-500 text-white" : ""}
+                  ${stepStatus === "current" ? "bg-primary text-primary-foreground ring-4 ring-primary/20" : ""}
+                  ${stepStatus === "upcoming" ? "bg-muted text-muted-foreground" : ""}
+                  ${stepStatus === "rejected" ? "bg-muted text-muted-foreground" : ""}
+                `}
+              >
+                {stepStatus === "completed" ? (
+                  <Check className="h-4 w-4" />
+                ) : stepStatus === "current" ? (
+                  <Circle className="h-3 w-3 fill-current" />
+                ) : (
+                  <Circle className="h-3 w-3" />
+                )}
+              </div>
+              <span
+                className={`
+                  text-xs mt-2 font-medium text-center
+                  ${stepStatus === "completed" ? "text-green-600 dark:text-green-400" : ""}
+                  ${stepStatus === "current" ? "text-primary" : ""}
+                  ${stepStatus === "upcoming" || stepStatus === "rejected" ? "text-muted-foreground" : ""}
+                `}
+              >
+                {step}
+              </span>
+            </div>
+            {!isLast && (
+              <div
+                className={`
+                  flex-1 h-0.5 mx-2 mt-[-16px] transition-all duration-300
+                  ${getStepStatus(status, STATUS_STEPS[index + 1]) === "completed" || getStepStatus(status, STATUS_STEPS[index + 1]) === "current" 
+                    ? "bg-green-500" 
+                    : "bg-muted"}
+                `}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 interface JobDetailsSheetProps {
   job: Job | null;
   open: boolean;
@@ -245,6 +316,23 @@ const JobDetailsSheet = ({
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* Status Timeline */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Status Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <StatusTimeline status={job.status} />
+              {job.status === "Rejected" && (
+                <div className="mt-4 rounded-lg bg-red-50 dark:bg-red-950/30 p-3 text-center">
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    This job was declined
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Brief Card */}
           <Card>
             <CardHeader className="pb-3">
