@@ -1,5 +1,8 @@
 import { useState, useRef } from "react";
-import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2 } from "lucide-react";
+import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import {
   Table,
@@ -27,6 +30,14 @@ interface Deliverable {
   uploadedAt: Date;
 }
 
+interface Message {
+  id: string;
+  author: string;
+  authorType: "creator" | "client";
+  content: string;
+  createdAt: Date;
+}
+
 interface Job {
   id: string;
   company: string;
@@ -38,6 +49,7 @@ interface Job {
   tone: string;
   deadline: string;
   deliverables: Deliverable[];
+  messages: Message[];
 }
 
 // Mock data
@@ -53,6 +65,9 @@ const mockJobs: Job[] = [
     tone: "Corporate",
     deadline: "Feb 15",
     deliverables: [],
+    messages: [
+      { id: "msg-1", author: "Sarah M.", authorType: "client", content: "Hi! Looking forward to working with you on this project.", createdAt: new Date("2024-01-20T10:30:00") },
+    ],
   },
   {
     id: "req-003",
@@ -65,6 +80,11 @@ const mockJobs: Job[] = [
     tone: "Professional",
     deadline: "Feb 20",
     deliverables: [],
+    messages: [
+      { id: "msg-2", author: "John D.", authorType: "client", content: "Please ensure the brand colors #3B82F6 and #10B981 are used consistently.", createdAt: new Date("2024-01-18T09:00:00") },
+      { id: "msg-3", author: "You", authorType: "creator", content: "Got it! I'll make sure to follow the brand guidelines. Do you have any specific font preferences?", createdAt: new Date("2024-01-18T11:30:00") },
+      { id: "msg-4", author: "John D.", authorType: "client", content: "We use Inter for headings and Open Sans for body text.", createdAt: new Date("2024-01-18T14:15:00") },
+    ],
   },
   {
     id: "req-004",
@@ -78,6 +98,10 @@ const mockJobs: Job[] = [
     deadline: "Feb 28",
     deliverables: [
       { id: "del-1", name: "promo-video-final.mp4", size: "24.5 MB", uploadedAt: new Date("2024-02-10") },
+    ],
+    messages: [
+      { id: "msg-5", author: "Mike T.", authorType: "client", content: "Great work! The video looks amazing!", createdAt: new Date("2024-02-10T16:00:00") },
+      { id: "msg-6", author: "You", authorType: "creator", content: "Thank you! It was a pleasure working on this project.", createdAt: new Date("2024-02-10T16:30:00") },
     ],
   },
 ];
@@ -117,6 +141,7 @@ interface JobDetailsSheetProps {
   onStatusChange: (jobId: string, newStatus: Job["status"]) => void;
   onAddDeliverable: (jobId: string, deliverable: Deliverable) => void;
   onRemoveDeliverable: (jobId: string, deliverableId: string) => void;
+  onAddMessage: (jobId: string, message: Message) => void;
 }
 
 const JobDetailsSheet = ({ 
@@ -126,10 +151,35 @@ const JobDetailsSheet = ({
   onStatusChange,
   onAddDeliverable,
   onRemoveDeliverable,
+  onAddMessage,
 }: JobDetailsSheetProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [newMessage, setNewMessage] = useState("");
 
   if (!job) return null;
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+    
+    const message: Message = {
+      id: `msg-${Date.now()}`,
+      author: "You",
+      authorType: "creator",
+      content: newMessage.trim(),
+      createdAt: new Date(),
+    };
+    
+    onAddMessage(job.id, message);
+    setNewMessage("");
+    toast.success("Message sent");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   const handleAccept = () => {
     onStatusChange(job.id, "In Progress");
@@ -324,6 +374,77 @@ const JobDetailsSheet = ({
             </Card>
           )}
 
+          {/* Messages Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                Messages
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Messages List */}
+              <ScrollArea className="h-[200px] pr-4">
+                <div className="space-y-4">
+                  {job.messages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No messages yet. Start the conversation!
+                    </p>
+                  ) : (
+                    job.messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex gap-3 ${message.authorType === "creator" ? "flex-row-reverse" : ""}`}
+                      >
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback className={message.authorType === "creator" ? "bg-primary text-primary-foreground" : "bg-muted"}>
+                            {message.author.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className={`flex-1 ${message.authorType === "creator" ? "text-right" : ""}`}>
+                          <div className="flex items-center gap-2 mb-1" style={{ justifyContent: message.authorType === "creator" ? "flex-end" : "flex-start" }}>
+                            <span className="text-sm font-medium">{message.author}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {format(message.createdAt, "MMM d, h:mm a")}
+                            </span>
+                          </div>
+                          <div
+                            className={`inline-block rounded-lg px-3 py-2 text-sm ${
+                              message.authorType === "creator"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
+                            }`}
+                          >
+                            {message.content}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* Message Input */}
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="min-h-[80px] resize-none"
+                />
+                <Button
+                  size="icon"
+                  className="h-[80px] w-10 flex-shrink-0"
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Action Buttons */}
           <div className="space-y-3">
             {job.status === "Submitted" && (
@@ -413,6 +534,21 @@ const MyJobsPage = () => {
     );
   };
 
+  const handleAddMessage = (jobId: string, message: Message) => {
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId
+          ? { ...job, messages: [...job.messages, message] }
+          : job
+      )
+    );
+    setSelectedJob((prev) =>
+      prev?.id === jobId
+        ? { ...prev, messages: [...prev.messages, message] }
+        : prev
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -476,6 +612,7 @@ const MyJobsPage = () => {
         onStatusChange={handleStatusChange}
         onAddDeliverable={handleAddDeliverable}
         onRemoveDeliverable={handleRemoveDeliverable}
+        onAddMessage={handleAddMessage}
       />
     </div>
   );
