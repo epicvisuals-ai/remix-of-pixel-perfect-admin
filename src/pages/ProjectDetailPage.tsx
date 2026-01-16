@@ -5,27 +5,18 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Download,
   MessageCircle,
   MoreHorizontal,
   CheckCircle2,
   Circle,
   AlertCircle,
-  FileText,
-  Image,
-  Video,
   Upload,
-  User,
-  Edit,
-  Eye,
-  ThumbsUp,
   Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +27,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import DeliverableCard from "@/components/projects/DeliverableCard";
+import { FileAttachmentItem } from "@/components/projects/FileAttachment";
 
 type DeliverableStatus = "pending" | "in_progress" | "in_review" | "approved" | "revision_requested";
 type DeliverableType = "image" | "video" | "document";
@@ -169,19 +162,6 @@ const mockActivity: ActivityItem[] = [
   },
 ];
 
-const deliverableStatusConfig: Record<DeliverableStatus, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "Pending", color: "bg-muted text-muted-foreground", icon: Circle },
-  in_progress: { label: "In Progress", color: "bg-blue-500/10 text-blue-600", icon: Clock },
-  in_review: { label: "In Review", color: "bg-amber-500/10 text-amber-600", icon: Eye },
-  approved: { label: "Approved", color: "bg-emerald-500/10 text-emerald-600", icon: CheckCircle2 },
-  revision_requested: { label: "Revision Requested", color: "bg-red-500/10 text-red-600", icon: AlertCircle },
-};
-
-const deliverableTypeIcons: Record<DeliverableType, React.ElementType> = {
-  image: Image,
-  video: Video,
-  document: FileText,
-};
 
 function formatDate(date: Date) {
   return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
@@ -213,10 +193,61 @@ export default function ProjectDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [newComment, setNewComment] = useState("");
+  const [deliverableAttachments, setDeliverableAttachments] = useState<Record<string, FileAttachmentItem[]>>({});
 
   const project = mockProject;
   const completedMilestones = mockMilestones.filter((m) => m.completed).length;
   const approvedDeliverables = mockDeliverables.filter((d) => d.status === "approved").length;
+
+  const handleUploadFiles = (deliverableId: string, files: File[]) => {
+    const newAttachments: FileAttachmentItem[] = files.map((file, index) => ({
+      id: `${deliverableId}-${Date.now()}-${index}`,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      uploadedAt: new Date(),
+      url: URL.createObjectURL(file),
+      uploading: true,
+      progress: 0,
+    }));
+
+    setDeliverableAttachments((prev) => ({
+      ...prev,
+      [deliverableId]: [...(prev[deliverableId] || []), ...newAttachments],
+    }));
+
+    // Simulate upload progress
+    newAttachments.forEach((attachment) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 30;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+          setDeliverableAttachments((prev) => ({
+            ...prev,
+            [deliverableId]: prev[deliverableId].map((a) =>
+              a.id === attachment.id ? { ...a, uploading: false, progress: 100 } : a
+            ),
+          }));
+        } else {
+          setDeliverableAttachments((prev) => ({
+            ...prev,
+            [deliverableId]: prev[deliverableId].map((a) =>
+              a.id === attachment.id ? { ...a, progress } : a
+            ),
+          }));
+        }
+      }, 200);
+    });
+  };
+
+  const handleRemoveAttachment = (deliverableId: string, attachmentId: string) => {
+    setDeliverableAttachments((prev) => ({
+      ...prev,
+      [deliverableId]: prev[deliverableId].filter((a) => a.id !== attachmentId),
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -386,76 +417,15 @@ export default function ProjectDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockDeliverables.map((deliverable) => {
-                  const status = deliverableStatusConfig[deliverable.status];
-                  const StatusIcon = status.icon;
-                  const TypeIcon = deliverableTypeIcons[deliverable.type];
-
-                  return (
-                    <div
-                      key={deliverable.id}
-                      className="flex items-center gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50"
-                    >
-                      {/* Thumbnail or Icon */}
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
-                        {deliverable.thumbnail ? (
-                          <img
-                            src={deliverable.thumbnail}
-                            alt={deliverable.title}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <TypeIcon className="h-6 w-6 text-muted-foreground" />
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium truncate">{deliverable.title}</p>
-                          {deliverable.version > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              v{deliverable.version}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>Due {formatDate(deliverable.dueDate)}</span>
-                        </div>
-                        {deliverable.feedback && (
-                          <p className="mt-1 text-xs text-red-600 line-clamp-1">
-                            {deliverable.feedback}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Status */}
-                      <Badge variant="secondary" className={cn("shrink-0", status.color)}>
-                        <StatusIcon className="mr-1 h-3 w-3" />
-                        {status.label}
-                      </Badge>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1">
-                        {deliverable.status === "in_review" && (
-                          <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600">
-                              <ThumbsUp className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        {deliverable.thumbnail && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                {mockDeliverables.map((deliverable) => (
+                  <DeliverableCard
+                    key={deliverable.id}
+                    deliverable={deliverable}
+                    attachments={deliverableAttachments[deliverable.id] || []}
+                    onUpload={handleUploadFiles}
+                    onRemoveAttachment={handleRemoveAttachment}
+                  />
+                ))}
               </div>
             </CardContent>
           </Card>
