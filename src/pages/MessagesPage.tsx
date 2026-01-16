@@ -79,22 +79,26 @@ export default function MessagesPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-xl border border-border bg-card">
-      {/* Conversations List */}
-      <div className="flex w-80 flex-col border-r border-border">
-        {/* Header */}
-        <div className="border-b border-border p-4">
-          <h1 className="text-lg font-semibold">Messages</h1>
-          <div className="relative mt-3">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+    <div className="space-y-4">
+      {/* Page Header */}
+      <h1 className="text-2xl font-semibold text-foreground">Messages</h1>
+
+      {/* Chat Container */}
+      <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border bg-card">
+        {/* Conversations List */}
+        <div className="flex w-80 flex-col border-r border-border">
+          {/* Search Header - matches chat header height */}
+          <div className="flex h-[72px] items-center border-b border-border px-4">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-        </div>
 
         {/* Conversation List */}
         <ScrollArea className="flex-1">
@@ -154,8 +158,8 @@ export default function MessagesPage() {
       <div className="flex flex-1 flex-col">
         {activeConversation && activeConv ? (
           <>
-            {/* Chat Header */}
-            <div className="flex items-center gap-4 border-b border-border p-4">
+            {/* Chat Header - matches search header height */}
+            <div className="flex h-[72px] items-center gap-4 border-b border-border px-4">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={activeConv.participantAvatar} />
                 <AvatarFallback>{activeConv.participantName.charAt(0)}</AvatarFallback>
@@ -282,6 +286,7 @@ export default function MessagesPage() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
