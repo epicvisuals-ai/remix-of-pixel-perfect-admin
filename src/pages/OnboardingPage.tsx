@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileText, Shield, Coins, Users, Sparkles, Zap, Check } from "lucide-react";
+import { ROLES, type AppRole } from "@/types/roles";
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -145,12 +153,28 @@ const OnboardingPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
-                  <Input
-                    id="role"
-                    placeholder="Creative Director"
+                  <Select
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  />
+                    onValueChange={(value: AppRole) =>
+                      setFormData({ ...formData, role: value })
+                    }
+                  >
+                    <SelectTrigger id="role" className="bg-background">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      {Object.values(ROLES).map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          <div className="flex flex-col">
+                            <span>{role.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {role.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </Card>
             </div>
