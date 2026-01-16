@@ -15,6 +15,7 @@ import {
   FileText,
   Plus,
   Bell,
+  Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -80,6 +81,7 @@ export function MainSidebar({
   const isJobsActive = location.pathname === "/my-jobs";
   const isRequestsActive = location.pathname === "/my-requests";
   const isNewRequestActive = location.pathname === "/create-request";
+  const isCreatorsActive = location.pathname === "/creators";
 
   return (
     <div className="flex min-h-screen flex-col bg-sidebar">
@@ -168,6 +170,18 @@ export function MainSidebar({
               >
                 <Plus className="h-5 w-5" />
                 <span>New Request</span>
+              </Button>
+              <Button
+                variant={isCreatorsActive ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                onClick={() => handleNavClick("/creators")}
+                className={cn(
+                  "gap-3 rounded-lg",
+                  isCreatorsActive && "bg-sidebar-accent"
+                )}
+              >
+                <Palette className="h-5 w-5" />
+                <span>Creators</span>
               </Button>
             </>
           )}
