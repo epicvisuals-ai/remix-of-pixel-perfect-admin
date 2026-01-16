@@ -12,6 +12,7 @@ import MyRequestsPage from "./pages/MyRequestsPage";
 import CreateRequestPage from "./pages/CreateRequestPage";
 import TeamPage from "./pages/settings/TeamPage";
 import ProfilePage from "./pages/settings/ProfilePage";
+import NotificationsPage from "./pages/settings/NotificationsPage";
 import BillingPage from "./pages/settings/BillingPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/settings" element={<Navigate to="/settings/team" replace />} />
                 <Route path="/settings/team" element={<TeamPage />} />
                 <Route path="/settings/profile" element={<ProfilePage />} />
+                <Route path="/settings/notifications" element={<NotificationsPage />} />
                 <Route path="/settings/billing" element={<BillingPage />} />
               </Route>
 
