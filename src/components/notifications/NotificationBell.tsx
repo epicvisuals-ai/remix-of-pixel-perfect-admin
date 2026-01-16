@@ -11,6 +11,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { NotificationPreferences } from "./NotificationPreferences";
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -91,6 +92,7 @@ export function NotificationBell() {
             )}
           </div>
           <div className="flex items-center gap-1">
+            <NotificationPreferences />
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
