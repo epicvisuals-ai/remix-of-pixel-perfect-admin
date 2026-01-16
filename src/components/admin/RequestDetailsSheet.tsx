@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   Image,
@@ -15,9 +15,12 @@ import {
   X,
   Download,
   ZoomIn,
+  ZoomOut,
   ChevronLeft,
   ChevronRight,
   Upload,
+  RotateCcw,
+  CheckCheck,
 } from "lucide-react";
 import {
   Sheet,
@@ -36,6 +39,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -69,6 +73,7 @@ interface Comment {
   content: string;
   createdAt: Date;
   attachments?: Attachment[];
+  readAt?: Date;
 }
 
 interface Request {
@@ -98,7 +103,7 @@ const availableCreators: Creator[] = [
   { id: "c4", name: "Casey Taylor", specialty: "Photography", avatar: "" },
 ];
 
-// Mock comments with attachments
+// Mock comments with attachments and read receipts
 const mockComments: Comment[] = [
   {
     id: "cm1",
@@ -107,6 +112,7 @@ const mockComments: Comment[] = [
     authorRole: "brand",
     content: "Looking forward to seeing the first drafts!",
     createdAt: new Date("2024-01-21T10:30:00"),
+    readAt: new Date("2024-01-21T10:35:00"),
   },
   {
     id: "cm2",
@@ -131,6 +137,7 @@ const mockComments: Comment[] = [
         size: "1.2 MB",
       },
     ],
+    readAt: new Date("2024-01-21T14:20:00"),
   },
   {
     id: "cm3",
@@ -139,6 +146,7 @@ const mockComments: Comment[] = [
     authorRole: "brand",
     content: "Let's go with the minimalist approach - it aligns better with our current branding.",
     createdAt: new Date("2024-01-21T15:00:00"),
+    readAt: new Date("2024-01-21T15:05:00"),
   },
 ];
 
@@ -191,8 +199,50 @@ export function RequestDetailsSheet({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<Attachment[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  
+  // Zoom and pan state for lightbox
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  
+  // Typing indicator state
+  const [isTyping, setIsTyping] = useState(false);
+  const [creatorIsTyping, setCreatorIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // Reset zoom/pan when changing images or closing lightbox
+  useEffect(() => {
+    setZoomLevel(1);
+    setPanPosition({ x: 0, y: 0 });
+  }, [lightboxIndex, lightboxOpen]);
+
+  // Simulate creator typing indicator (mock - would be real-time in production)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Randomly show typing indicator for demo
+      if (Math.random() > 0.95 && !creatorIsTyping) {
+        setCreatorIsTyping(true);
+        setTimeout(() => setCreatorIsTyping(false), 3000);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [creatorIsTyping]);
+
+  // Handle user typing indicator
+  const handleTypingStart = useCallback(() => {
+    setIsTyping(true);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 2000);
+  }, []);
 
   // All useCallback hooks MUST be declared before any conditional returns
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -324,10 +374,64 @@ export function RequestDetailsSheet({
     }
   };
 
+  // Zoom controls
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 0.5, 4));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => {
+      const newZoom = Math.max(prev - 0.5, 1);
+      if (newZoom === 1) {
+        setPanPosition({ x: 0, y: 0 });
+      }
+      return newZoom;
+    });
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+    setPanPosition({ x: 0, y: 0 });
+  };
+
+  // Pan controls
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomLevel > 1) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - panPosition.x, y: e.clientY - panPosition.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isPanning && zoomLevel > 1) {
+      setPanPosition({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  // Mouse wheel zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      handleZoomIn();
+    } else {
+      handleZoomOut();
+    }
+  };
+
   const handleLightboxKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") navigateLightbox("prev");
     if (e.key === "ArrowRight") navigateLightbox("next");
     if (e.key === "Escape") setLightboxOpen(false);
+    if (e.key === "+" || e.key === "=") handleZoomIn();
+    if (e.key === "-") handleZoomOut();
+    if (e.key === "0") handleResetZoom();
   };
 
   const AttachmentPreview = ({ attachment, isBrand }: { attachment: Attachment; isBrand: boolean }) => {
@@ -677,13 +781,44 @@ export function RequestDetailsSheet({
                               </div>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {comment.authorName} •{" "}
-                            {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
-                          </p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <p className="text-xs text-muted-foreground">
+                              {comment.authorName} •{" "}
+                              {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
+                            </p>
+                            {/* Read receipt for brand messages */}
+                            {comment.authorRole === "brand" && comment.readAt && (
+                              <span title={`Read ${formatDistanceToNow(comment.readAt, { addSuffix: true })}`}>
+                                <CheckCheck className="h-3 w-3 text-blue-500 ml-1" />
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Typing indicator */}
+                    {creatorIsTyping && (
+                      <div className="flex gap-3">
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarFallback className="text-xs bg-muted text-foreground">
+                            AM
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 max-w-[80%]">
+                          <div className="inline-block p-3 rounded-lg bg-muted">
+                            <div className="flex items-center gap-1">
+                              <span className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
+                              <span className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
+                              <span className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Alex Morgan is typing...
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </ScrollArea>
@@ -743,7 +878,10 @@ export function RequestDetailsSheet({
                   <Input
                     placeholder="Type a message or drop files..."
                     value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
+                    onChange={(e) => {
+                      setNewComment(e.target.value);
+                      handleTypingStart();
+                    }}
                     onKeyDown={handleKeyPress}
                     className="flex-1"
                   />
@@ -755,6 +893,11 @@ export function RequestDetailsSheet({
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
+                {isTyping && (
+                  <p className="text-xs text-muted-foreground mt-1 animate-fade-in">
+                    You are typing...
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground mt-2 text-center">
                   Drag & drop files here or click <Paperclip className="h-3 w-3 inline" /> to attach
                 </p>
@@ -776,10 +919,10 @@ export function RequestDetailsSheet({
           </div>
         </div>
 
-        {/* Image Lightbox */}
+        {/* Image Lightbox with Zoom/Pan */}
         <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
           <DialogContent 
-            className="max-w-4xl w-full h-[90vh] p-0 bg-black/95 border-none"
+            className="max-w-[95vw] w-full h-[95vh] p-0 bg-black/95 border-none"
             onKeyDown={handleLightboxKeyDown}
           >
             <VisuallyHidden>
@@ -798,13 +941,57 @@ export function RequestDetailsSheet({
                   <X className="h-6 w-6" />
                 </Button>
 
+                {/* Zoom controls - top left */}
+                <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/60 rounded-lg p-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={handleZoomOut}
+                    disabled={zoomLevel <= 1}
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <div className="w-24 px-1">
+                    <Slider
+                      value={[zoomLevel]}
+                      min={1}
+                      max={4}
+                      step={0.1}
+                      onValueChange={([value]) => setZoomLevel(value)}
+                      className="[&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:bg-white"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={handleZoomIn}
+                    disabled={zoomLevel >= 4}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-white/70 min-w-[40px]">
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={handleResetZoom}
+                    disabled={zoomLevel === 1}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 {/* Navigation arrows */}
                 {lightboxImages.length > 1 && (
                   <>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute left-4 z-20 text-white hover:bg-white/20 h-12 w-12"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-20 text-white hover:bg-white/20 h-12 w-12"
                       onClick={() => navigateLightbox("prev")}
                     >
                       <ChevronLeft className="h-8 w-8" />
@@ -812,7 +999,7 @@ export function RequestDetailsSheet({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute right-4 z-20 text-white hover:bg-white/20 h-12 w-12"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-20 text-white hover:bg-white/20 h-12 w-12"
                       onClick={() => navigateLightbox("next")}
                     >
                       <ChevronRight className="h-8 w-8" />
@@ -820,12 +1007,27 @@ export function RequestDetailsSheet({
                   </>
                 )}
 
-                {/* Image */}
-                <img
-                  src={lightboxImages[lightboxIndex]?.url}
-                  alt={lightboxImages[lightboxIndex]?.name}
-                  className="max-w-full max-h-full object-contain animate-scale-in"
-                />
+                {/* Image container with zoom and pan */}
+                <div
+                  className="overflow-hidden w-full h-full flex items-center justify-center"
+                  onWheel={handleWheel}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={{ cursor: zoomLevel > 1 ? (isPanning ? "grabbing" : "grab") : "default" }}
+                >
+                  <img
+                    ref={imageRef}
+                    src={lightboxImages[lightboxIndex]?.url}
+                    alt={lightboxImages[lightboxIndex]?.name}
+                    className="max-w-full max-h-full object-contain transition-transform duration-100"
+                    style={{
+                      transform: `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)`,
+                    }}
+                    draggable={false}
+                  />
+                </div>
 
                 {/* Image info */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-lg flex items-center gap-4">
@@ -847,6 +1049,13 @@ export function RequestDetailsSheet({
                     Download
                   </Button>
                 </div>
+
+                {/* Zoom hint */}
+                {zoomLevel === 1 && (
+                  <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-white/50 text-xs animate-fade-in">
+                    Scroll to zoom • Drag to pan when zoomed
+                  </div>
+                )}
               </div>
             )}
           </DialogContent>
