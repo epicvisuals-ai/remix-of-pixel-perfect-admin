@@ -37,7 +37,12 @@ export default function MainLayout() {
           desktopSidebarOpen ? "w-[280px]" : "w-0"
         )}
       >
-        <div className="fixed top-0 left-0 h-screen w-[280px] overflow-y-auto">
+        <div 
+          className={cn(
+            "fixed top-0 left-0 h-screen w-[280px] overflow-y-auto transition-transform duration-300 ease-in-out",
+            desktopSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
           <MainSidebar
             onToggleSidebar={handleToggleDesktopSidebar}
             isDesktopSidebarOpen={desktopSidebarOpen}
