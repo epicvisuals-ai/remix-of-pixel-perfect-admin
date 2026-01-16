@@ -1,8 +1,16 @@
-import { useState, useRef } from "react";
-import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send, Circle } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send, Circle, Search, ArrowUpDown, Filter } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import {
   Table,
@@ -577,9 +585,52 @@ const JobDetailsSheet = ({
   );
 };
 
+type SortOption = "date-desc" | "date-asc" | "budget-desc" | "budget-asc";
+type StatusFilter = "all" | Job["status"];
+
 const MyJobsPage = () => {
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortOption, setSortOption] = useState<SortOption>("date-desc");
+
+  const filteredAndSortedJobs = useMemo(() => {
+    let result = [...jobs];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (job) =>
+          job.id.toLowerCase().includes(query) ||
+          job.company.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter((job) => job.status === statusFilter);
+    }
+
+    // Sorting
+    result.sort((a, b) => {
+      switch (sortOption) {
+        case "date-desc":
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        case "date-asc":
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        case "budget-desc":
+          return b.budget - a.budget;
+        case "budget-asc":
+          return a.budget - b.budget;
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [jobs, searchQuery, statusFilter, sortOption]);
 
   const handleStatusChange = (jobId: string, newStatus: Job["status"]) => {
     setJobs((prev) =>
@@ -644,6 +695,46 @@ const MyJobsPage = () => {
         <p className="text-muted-foreground">Jobs assigned to you</p>
       </div>
 
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by ID or company..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+            <SelectTrigger className="w-[140px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="Submitted">Submitted</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+            <SelectTrigger className="w-[160px]">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">Newest First</SelectItem>
+              <SelectItem value="date-asc">Oldest First</SelectItem>
+              <SelectItem value="budget-desc">Highest Budget</SelectItem>
+              <SelectItem value="budget-asc">Lowest Budget</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-border bg-card animate-fade-in">
         <Table>
           <TableHeader>
@@ -657,38 +748,46 @@ const MyJobsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {jobs.map((job) => (
-              <TableRow
-                key={job.id}
-                className="hover:bg-muted/50 cursor-pointer"
-                onClick={() => setSelectedJob(job)}
-              >
-                <TableCell className="font-medium text-foreground">
-                  {job.id}
-                </TableCell>
-                <TableCell className="text-foreground">{job.company}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <TypeIcon type={job.type} />
-                    <span className="text-foreground">{job.type}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-foreground">
-                  <span className="text-muted-foreground">$</span> {job.budget}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="secondary"
-                    className={getStatusBadgeVariant(job.status)}
-                  >
-                    {job.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {format(job.createdAt, "MMM d, yyyy")}
+            {filteredAndSortedJobs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  No jobs found matching your criteria.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredAndSortedJobs.map((job) => (
+                <TableRow
+                  key={job.id}
+                  className="hover:bg-muted/50 cursor-pointer"
+                  onClick={() => setSelectedJob(job)}
+                >
+                  <TableCell className="font-medium text-foreground">
+                    {job.id}
+                  </TableCell>
+                  <TableCell className="text-foreground">{job.company}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <TypeIcon type={job.type} />
+                      <span className="text-foreground">{job.type}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-foreground">
+                    <span className="text-muted-foreground">$</span> {job.budget}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="secondary"
+                      className={getStatusBadgeVariant(job.status)}
+                    >
+                      {job.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {format(job.createdAt, "MMM d, yyyy")}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
