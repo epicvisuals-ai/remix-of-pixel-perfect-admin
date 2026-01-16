@@ -4,6 +4,7 @@ import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MainSidebar } from "@/components/admin/MainSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
@@ -18,6 +19,9 @@ export default function MainLayout() {
     if (path.includes("team")) return "Team";
     if (path.includes("profile")) return "Profile";
     if (path.includes("billing")) return "Billing";
+    if (path.includes("my-requests")) return "My Requests";
+    if (path.includes("create-request")) return "Create Request";
+    if (path.includes("my-jobs")) return "My Jobs";
     return "Settings";
   };
 
@@ -49,19 +53,24 @@ export default function MainLayout() {
         )}
       >
         <div className="flex flex-1 flex-col rounded-none md:rounded-[32px] bg-gradient-to-b from-primary/5 via-background to-[hsl(25_100%_95%)] dark:to-[hsl(25_30%_15%)]">
-          {/* Desktop Header with Toggle */}
-          <header className="hidden md:flex items-center gap-3 px-6 py-4">
-            {!desktopSidebarOpen && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-lg border border-border bg-card/80 hover:bg-card"
-                onClick={handleToggleDesktopSidebar}
-                aria-label="Open sidebar"
-              >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            )}
+          {/* Desktop Header with Toggle and Notifications */}
+          <header className="hidden md:flex items-center justify-between gap-3 px-6 py-4">
+            <div className="flex items-center gap-3">
+              {!desktopSidebarOpen && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-lg border border-border bg-card/80 hover:bg-card"
+                  onClick={handleToggleDesktopSidebar}
+                  aria-label="Open sidebar"
+                >
+                  <PanelLeft className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+            </div>
           </header>
 
           {/* Mobile Header */}
@@ -83,13 +92,9 @@ export default function MainLayout() {
 
             <span className="text-base font-semibold text-foreground">{getPageTitle()}</span>
 
-            {!sidebarOpen && (
-              <div className="ml-auto">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card/80">
-                  <PanelLeft className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-            )}
+            <div className="ml-auto flex items-center gap-2">
+              <NotificationBell />
+            </div>
           </header>
 
           {/* Page Content */}
