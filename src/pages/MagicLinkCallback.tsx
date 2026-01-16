@@ -30,10 +30,14 @@ const MagicLinkCallback = () => {
 
       try {
         const response = await authApi.confirmSignin(email, token);
-        const authToken = response.data?.token || response.data?.access_token;
+        const { access_token, user } = response.data;
         
-        if (authToken) {
-          setToken(authToken);
+        if (access_token) {
+          setToken(access_token);
+          // Store user data for later use
+          if (user) {
+            localStorage.setItem('user', JSON.stringify(user));
+          }
           localStorage.removeItem('pending_auth_email');
           setStatus('success');
           
