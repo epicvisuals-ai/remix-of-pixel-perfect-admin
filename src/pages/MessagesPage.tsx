@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMessaging } from "@/contexts/MessagingContext";
+import { TypingIndicator } from "@/components/messaging/TypingIndicator";
+import { MessageStatusIndicator } from "@/components/messaging/MessageStatusIndicator";
 import { cn } from "@/lib/utils";
 
 function formatTime(date: Date) {
@@ -33,6 +35,7 @@ export default function MessagesPage() {
     setActiveConversation,
     sendMessage,
     setIsOpen,
+    isParticipantTyping,
   } = useMessaging();
 
   const [newMessage, setNewMessage] = useState("");
@@ -49,7 +52,7 @@ export default function MessagesPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isParticipantTyping]);
 
   useEffect(() => {
     if (activeConversation) {
@@ -128,7 +131,11 @@ export default function MessagesPage() {
                       </span>
                     </div>
                     <p className="truncate text-sm text-muted-foreground">
-                      {conv.lastMessage || "Start a conversation"}
+                      {conv.isTyping ? (
+                        <span className="italic text-primary">typing...</span>
+                      ) : (
+                        conv.lastMessage || "Start a conversation"
+                      )}
                     </p>
                   </div>
                   {conv.unreadCount > 0 && (
@@ -155,7 +162,13 @@ export default function MessagesPage() {
               </Avatar>
               <div className="flex-1">
                 <h2 className="font-medium">{activeConv.participantName}</h2>
-                <p className="text-sm text-muted-foreground">Creator</p>
+                <p className="text-sm text-muted-foreground">
+                  {isParticipantTyping ? (
+                    <span className="text-primary">typing...</span>
+                  ) : (
+                    "Creator"
+                  )}
+                </p>
               </div>
               <Button variant="outline" size="sm">
                 View Profile
@@ -205,21 +218,35 @@ export default function MessagesPage() {
                           )}
                         >
                           <p className="text-sm leading-relaxed">{message.content}</p>
-                          <p
+                          <div
                             className={cn(
-                              "mt-1 text-xs",
+                              "mt-1 flex items-center gap-1.5 text-xs",
                               message.isOwn
-                                ? "text-primary-foreground/70"
+                                ? "justify-end text-primary-foreground/70"
                                 : "text-muted-foreground"
                             )}
                           >
-                            {formatMessageTime(message.timestamp)}
-                          </p>
+                            <span>{formatMessageTime(message.timestamp)}</span>
+                            {message.isOwn && (
+                              <MessageStatusIndicator status={message.status} />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   );
                 })}
+                {isParticipantTyping && (
+                  <div className="flex gap-3">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={activeConv.participantAvatar} />
+                      <AvatarFallback>{activeConv.participantName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="rounded-2xl bg-muted px-4 py-3">
+                      <TypingIndicator />
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>

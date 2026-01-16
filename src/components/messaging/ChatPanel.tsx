@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMessaging } from "@/contexts/MessagingContext";
+import { TypingIndicator } from "./TypingIndicator";
+import { MessageStatusIndicator } from "./MessageStatusIndicator";
 import { cn } from "@/lib/utils";
 
 function formatTime(date: Date) {
@@ -31,6 +33,7 @@ export function ChatPanel() {
     sendMessage,
     isOpen,
     setIsOpen,
+    isParticipantTyping,
   } = useMessaging();
 
   const [newMessage, setNewMessage] = useState("");
@@ -43,7 +46,7 @@ export function ChatPanel() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isParticipantTyping]);
 
   useEffect(() => {
     if (activeConversation && isOpen) {
@@ -107,7 +110,12 @@ export function ChatPanel() {
                 {activeConv?.participantName.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <span className="flex-1 font-medium">{activeConv?.participantName}</span>
+            <div className="flex-1">
+              <span className="font-medium">{activeConv?.participantName}</span>
+              {isParticipantTyping && (
+                <p className="text-xs text-muted-foreground">typing...</p>
+              )}
+            </div>
           </>
         ) : (
           <>
@@ -154,17 +162,31 @@ export function ChatPanel() {
                     )}
                   >
                     <p className="text-sm">{message.content}</p>
-                    <p
+                    <div
                       className={cn(
-                        "mt-1 text-xs",
-                        message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                        "mt-1 flex items-center gap-1 text-xs",
+                        message.isOwn ? "justify-end text-primary-foreground/70" : "text-muted-foreground"
                       )}
                     >
-                      {formatTime(message.timestamp)}
-                    </p>
+                      <span>{formatTime(message.timestamp)}</span>
+                      {message.isOwn && (
+                        <MessageStatusIndicator status={message.status} />
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
+              {isParticipantTyping && (
+                <div className="flex gap-2">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={activeConv?.participantAvatar} />
+                    <AvatarFallback>{activeConv?.participantName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="rounded-2xl bg-muted px-4 py-3">
+                    <TypingIndicator />
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
@@ -217,7 +239,11 @@ export function ChatPanel() {
                       </span>
                     </div>
                     <p className="truncate text-sm text-muted-foreground">
-                      {conv.lastMessage || "Start a conversation"}
+                      {conv.isTyping ? (
+                        <span className="italic text-primary">typing...</span>
+                      ) : (
+                        conv.lastMessage || "Start a conversation"
+                      )}
                     </p>
                   </div>
                   {conv.unreadCount > 0 && (
