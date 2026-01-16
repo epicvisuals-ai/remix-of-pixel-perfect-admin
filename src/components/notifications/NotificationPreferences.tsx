@@ -1,7 +1,9 @@
-import { Settings2, MessageSquare, RefreshCw, UserPlus, Info, Volume2, Bell, BellRing } from "lucide-react";
+import { useState } from "react";
+import { Settings2, MessageSquare, RefreshCw, UserPlus, Info, Volume2, Bell, BellRing, Mail, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +12,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useNotifications, NotificationPreferences as Preferences } from "@/contexts/NotificationContext";
+import { useNotifications, NotificationPreferences as Preferences, EmailDigestSettings } from "@/contexts/NotificationContext";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 const notificationTypes = [
   {
@@ -64,7 +74,21 @@ const deliveryMethods = [
     description: "Show browser notifications when inactive",
     icon: BellRing,
   },
+  {
+    key: "email" as const,
+    label: "Email Digest",
+    description: "Receive email summaries of notifications",
+    icon: Mail,
+    requiresBackend: true,
+  },
 ];
+
+const digestFrequencies = [
+  { value: "instant", label: "Instant" },
+  { value: "hourly", label: "Hourly" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+] as const;
 
 export function NotificationPreferences() {
   const { 
@@ -73,6 +97,8 @@ export function NotificationPreferences() {
     notificationPermission,
     requestNotificationPermission,
   } = useNotifications();
+
+  const [emailInput, setEmailInput] = useState(preferences.emailDigest.email);
 
   const handleTypeToggle = (type: keyof Preferences["types"]) => {
     updatePreferences({
@@ -95,6 +121,18 @@ export function NotificationPreferences() {
           });
         }
       });
+    } else if (method === "email") {
+      const newEmailEnabled = !preferences.delivery.email;
+      updatePreferences({
+        delivery: {
+          ...preferences.delivery,
+          email: newEmailEnabled,
+        },
+        emailDigest: {
+          ...preferences.emailDigest,
+          enabled: newEmailEnabled,
+        },
+      });
     } else {
       updatePreferences({
         delivery: {
@@ -103,6 +141,28 @@ export function NotificationPreferences() {
         },
       });
     }
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmailInput(value);
+  };
+
+  const handleEmailBlur = () => {
+    updatePreferences({
+      emailDigest: {
+        ...preferences.emailDigest,
+        email: emailInput,
+      },
+    });
+  };
+
+  const handleFrequencyChange = (frequency: EmailDigestSettings["frequency"]) => {
+    updatePreferences({
+      emailDigest: {
+        ...preferences.emailDigest,
+        frequency,
+      },
+    });
   };
 
   return (
@@ -164,32 +224,85 @@ export function NotificationPreferences() {
             <h4 className="text-sm font-medium text-foreground">Delivery Methods</h4>
             <div className="space-y-3">
               {deliveryMethods.map((method) => (
-                <div
-                  key={method.key}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-muted text-foreground">
-                      <method.icon className="h-4 w-4" />
+                <div key={method.key}>
+                  <div
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-muted text-foreground">
+                        <method.icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor={`delivery-${method.key}`} className="text-sm font-medium">
+                            {method.label}
+                          </Label>
+                          {"requiresBackend" in method && method.requiresBackend && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              Coming Soon
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {method.description}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor={`delivery-${method.key}`} className="text-sm font-medium">
-                        {method.label}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {method.description}
+                    <Switch
+                      id={`delivery-${method.key}`}
+                      checked={preferences.delivery[method.key]}
+                      onCheckedChange={() => handleDeliveryToggle(method.key)}
+                      disabled={
+                        (method.key === "browser" && notificationPermission === "denied")
+                      }
+                    />
+                  </div>
+                  
+                  {/* Email digest settings */}
+                  {method.key === "email" && preferences.delivery.email && (
+                    <div className="mt-2 ml-12 space-y-3 p-3 rounded-lg bg-muted/50 border border-dashed">
+                      <div className="space-y-2">
+                        <Label htmlFor="digest-email" className="text-xs font-medium">
+                          Email Address
+                        </Label>
+                        <Input
+                          id="digest-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={emailInput}
+                          onChange={(e) => handleEmailChange(e.target.value)}
+                          onBlur={handleEmailBlur}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium flex items-center gap-1.5">
+                          <Clock className="h-3 w-3" />
+                          Digest Frequency
+                        </Label>
+                        <Select 
+                          value={preferences.emailDigest.frequency}
+                          onValueChange={handleFrequencyChange}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {digestFrequencies.map((freq) => (
+                              <SelectItem key={freq.value} value={freq.value}>
+                                {freq.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <p className="text-[10px] text-muted-foreground italic">
+                        Email notifications will be available once a backend is connected.
                       </p>
                     </div>
-                  </div>
-                  <Switch
-                    id={`delivery-${method.key}`}
-                    checked={preferences.delivery[method.key]}
-                    onCheckedChange={() => handleDeliveryToggle(method.key)}
-                    disabled={
-                      method.key === "browser" && 
-                      notificationPermission === "denied"
-                    }
-                  />
+                  )}
                 </div>
               ))}
               {notificationPermission === "denied" && (
