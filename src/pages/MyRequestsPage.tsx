@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Image, Video, Plus, Search, ArrowUpDown, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -19,16 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 
 interface Request {
   id: string;
@@ -103,16 +94,11 @@ type SortOption = "date-desc" | "date-asc" | "budget-desc" | "budget-asc";
 type StatusFilter = "all" | Request["status"];
 
 const MyRequestsPage = () => {
-  const [requests, setRequests] = useState<Request[]>(mockRequests);
+  const navigate = useNavigate();
+  const [requests] = useState<Request[]>(mockRequests);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
-  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
-  const [newRequest, setNewRequest] = useState({
-    type: "Image" as "Image" | "Video",
-    budget: "",
-    brief: "",
-  });
 
   const filteredAndSortedRequests = useMemo(() => {
     let result = [...requests];
@@ -147,26 +133,6 @@ const MyRequestsPage = () => {
     return result;
   }, [requests, searchQuery, statusFilter, sortOption]);
 
-  const handleCreateRequest = () => {
-    if (!newRequest.brief.trim() || !newRequest.budget) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    const request: Request = {
-      id: `req-${String(requests.length + 1).padStart(3, "0")}`,
-      type: newRequest.type,
-      budget: Number(newRequest.budget),
-      status: "Created",
-      createdAt: new Date(),
-      brief: newRequest.brief,
-    };
-
-    setRequests((prev) => [request, ...prev]);
-    setNewRequest({ type: "Image", budget: "", brief: "" });
-    setIsNewRequestOpen(false);
-    toast.success("Request created successfully!");
-  };
 
   return (
     <div className="space-y-6">
@@ -177,63 +143,10 @@ const MyRequestsPage = () => {
             Track and manage your creative requests
           </p>
         </div>
-        <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Request</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select
-                  value={newRequest.type}
-                  onValueChange={(value: "Image" | "Video") =>
-                    setNewRequest((prev) => ({ ...prev, type: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Image">Image</SelectItem>
-                    <SelectItem value="Video">Video</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Budget ($)</Label>
-                <Input
-                  type="number"
-                  placeholder="Enter budget"
-                  value={newRequest.budget}
-                  onChange={(e) =>
-                    setNewRequest((prev) => ({ ...prev, budget: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Brief</Label>
-                <Textarea
-                  placeholder="Describe your creative request..."
-                  value={newRequest.brief}
-                  onChange={(e) =>
-                    setNewRequest((prev) => ({ ...prev, brief: e.target.value }))
-                  }
-                  rows={4}
-                />
-              </div>
-              <Button onClick={handleCreateRequest} className="w-full">
-                Create Request
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => navigate("/create-request")}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Request
+        </Button>
       </div>
 
       {/* Search and Filters */}

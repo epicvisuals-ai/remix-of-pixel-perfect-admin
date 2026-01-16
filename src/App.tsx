@@ -8,6 +8,7 @@ import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import MyJobsPage from "./pages/MyJobsPage";
 import MyRequestsPage from "./pages/MyRequestsPage";
+import CreateRequestPage from "./pages/CreateRequestPage";
 import TeamPage from "./pages/settings/TeamPage";
 import ProfilePage from "./pages/settings/ProfilePage";
 import BillingPage from "./pages/settings/BillingPage";
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/my-jobs" element={<MyJobsPage />} />
               <Route path="/my-requests" element={<MyRequestsPage />} />
+              <Route path="/create-request" element={<CreateRequestPage />} />
               <Route path="/settings" element={<Navigate to="/settings/team" replace />} />
               <Route path="/settings/team" element={<TeamPage />} />
               <Route path="/settings/profile" element={<ProfilePage />} />
