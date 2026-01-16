@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek, startOfDay } from "date-fns";
-import { Bell, MessageSquare, RefreshCw, UserPlus, Info, Check, Trash2, X, BellRing } from "lucide-react";
+import { isToday, isYesterday, isThisWeek } from "date-fns";
+import { Bell, Check, Trash2, BellRing } from "lucide-react";
 import { useNotifications, Notification } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { NotificationPreferences } from "./NotificationPreferences";
+import { NotificationItem } from "./NotificationItem";
 
 type DateGroup = "today" | "yesterday" | "thisWeek" | "older";
 
@@ -36,33 +36,6 @@ const getDateGroup = (date: Date): DateGroup => {
   return "older";
 };
 
-const getNotificationIcon = (type: Notification["type"]) => {
-  switch (type) {
-    case "message":
-      return <MessageSquare className="h-4 w-4" />;
-    case "status_change":
-      return <RefreshCw className="h-4 w-4" />;
-    case "assignment":
-      return <UserPlus className="h-4 w-4" />;
-    case "system":
-    default:
-      return <Info className="h-4 w-4" />;
-  }
-};
-
-const getNotificationColor = (type: Notification["type"]) => {
-  switch (type) {
-    case "message":
-      return "bg-blue-100 text-blue-600";
-    case "status_change":
-      return "bg-amber-100 text-amber-600";
-    case "assignment":
-      return "bg-green-100 text-green-600";
-    case "system":
-    default:
-      return "bg-gray-100 text-gray-600";
-  }
-};
 
 export function NotificationBell() {
   const { 
@@ -157,55 +130,14 @@ export function NotificationBell() {
                       {groupLabels[group]}
                     </span>
                   </div>
-                  <div className="divide-y">
+                  <div className="divide-y overflow-hidden">
                     {groupedNotifications[group].map((notification) => (
-                      <div
+                      <NotificationItem
                         key={notification.id}
-                        className={cn(
-                          "flex gap-3 p-4 cursor-pointer transition-colors hover:bg-muted/50",
-                          !notification.read && "bg-primary/5"
-                        )}
+                        notification={notification}
+                        onDismiss={() => clearNotification(notification.id)}
                         onClick={() => handleNotificationClick(notification)}
-                      >
-                        <div
-                          className={cn(
-                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                            getNotificationColor(notification.type)
-                          )}
-                        >
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className={cn(
-                              "text-sm line-clamp-1",
-                              !notification.read ? "font-semibold text-foreground" : "font-medium text-foreground"
-                            )}>
-                              {notification.title}
-                            </p>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                clearNotification(notification.id);
-                              }}
-                              className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                            {notification.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
-                            </span>
-                            {!notification.read && (
-                              <span className="h-2 w-2 rounded-full bg-primary" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      />
                     ))}
                   </div>
                 </div>
