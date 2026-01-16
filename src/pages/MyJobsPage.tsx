@@ -181,7 +181,7 @@ const MyJobsPage = () => {
         <p className="text-muted-foreground">Jobs assigned to you</p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card">
+      <div className="rounded-xl border border-border bg-card animate-fade-in">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
