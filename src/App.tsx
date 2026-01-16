@@ -26,6 +26,9 @@ import BillingPage from "./pages/settings/BillingPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import AdminRequestsPage from "./pages/admin/AdminRequestsPage";
+import AdminCreatorsPage from "./pages/admin/AdminCreatorsPage";
+import AdminBrandsPage from "./pages/admin/AdminBrandsPage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +65,11 @@ const App = () => (
                     <Route path="/settings/profile" element={<ProfilePage />} />
                     <Route path="/settings/notifications" element={<NotificationsPage />} />
                     <Route path="/settings/billing" element={<BillingPage />} />
+                    
+                    {/* Admin Routes */}
+                    <Route path="/admin/requests" element={<AdminRequestsPage />} />
+                    <Route path="/admin/creators" element={<AdminCreatorsPage />} />
+                    <Route path="/admin/brands" element={<AdminBrandsPage />} />
                   </Route>
 
                   {/* Catch-all */}
