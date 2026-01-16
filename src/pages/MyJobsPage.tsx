@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis } from "recharts";
 import { Progress } from "@/components/ui/progress";
 
 interface Deliverable {
@@ -744,6 +744,22 @@ const MyJobsPage = () => {
       label: "Earnings",
       color: "hsl(var(--primary))",
     },
+    Submitted: {
+      label: "Submitted",
+      color: "hsl(217, 91%, 60%)",
+    },
+    "In Progress": {
+      label: "In Progress",
+      color: "hsl(45, 93%, 47%)",
+    },
+    Approved: {
+      label: "Approved",
+      color: "hsl(142, 71%, 45%)",
+    },
+    Rejected: {
+      label: "Rejected",
+      color: "hsl(0, 84%, 60%)",
+    },
   };
 
   return (
@@ -792,26 +808,25 @@ const MyJobsPage = () => {
             <CardTitle className="text-sm font-medium">Jobs by Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[100px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={analytics.statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={25}
-                    outerRadius={40}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {analytics.statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={chartConfig} className="h-[100px] w-full">
+              <PieChart>
+                <Pie
+                  data={analytics.statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={25}
+                  outerRadius={40}
+                  paddingAngle={2}
+                  dataKey="value"
+                  nameKey="name"
+                >
+                  {analytics.statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+              </PieChart>
+            </ChartContainer>
             <div className="flex flex-wrap gap-2 mt-2 justify-center">
               {analytics.statusData.map((item) => (
                 <div key={item.name} className="flex items-center gap-1 text-xs">
