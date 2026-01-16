@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image, Video, Plus, Search, ArrowUpDown, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { RequestDetailsSheet } from "@/components/admin/RequestDetailsSheet";
 import {
   Table,
   TableBody,
@@ -28,6 +29,8 @@ interface Request {
   status: "Created" | "Submitted" | "In Progress" | "Approved" | "Rejected";
   createdAt: Date;
   brief: string;
+  toneOfVoice?: string;
+  deadline?: Date;
 }
 
 // Mock data
@@ -38,7 +41,9 @@ const mockRequests: Request[] = [
     budget: 250,
     status: "Submitted",
     createdAt: new Date("2024-01-20"),
-    brief: "Need a hero banner for our new SaaS product launch.",
+    brief: "Need a hero banner for our new SaaS product launch. The banner should convey innovation and trust. We want a modern, clean aesthetic with our brand colors (blue and white). Include imagery that suggests cloud technology and seamless integration.",
+    toneOfVoice: "Professional",
+    deadline: new Date("2024-02-15"),
   },
   {
     id: "req-002",
@@ -46,7 +51,8 @@ const mockRequests: Request[] = [
     budget: 500,
     status: "Created",
     createdAt: new Date("2024-01-19"),
-    brief: "Promotional video for social media campaign.",
+    brief: "Promotional video for social media campaign. 30-60 seconds, highlighting our new feature release. Should be dynamic and engaging for a younger audience.",
+    toneOfVoice: "Playful",
   },
   {
     id: "req-003",
@@ -54,7 +60,9 @@ const mockRequests: Request[] = [
     budget: 350,
     status: "In Progress",
     createdAt: new Date("2024-01-18"),
-    brief: "Create a series of social media graphics.",
+    brief: "Create a series of social media graphics for Instagram and LinkedIn. Need 5 variations with consistent branding. Focus on user testimonials and product benefits.",
+    toneOfVoice: "Cinematic",
+    deadline: new Date("2024-02-01"),
   },
   {
     id: "req-004",
@@ -62,7 +70,8 @@ const mockRequests: Request[] = [
     budget: 400,
     status: "Approved",
     createdAt: new Date("2024-01-15"),
-    brief: "30-second promotional video for our mobile app.",
+    brief: "30-second promotional video for our mobile app. Showcase the main features: easy signup, dashboard overview, and notification system.",
+    toneOfVoice: "Minimalist",
   },
 ];
 
@@ -99,6 +108,13 @@ const MyRequestsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  const handleRowClick = (request: Request) => {
+    setSelectedRequest(request);
+    setIsDetailsOpen(true);
+  };
 
   const filteredAndSortedRequests = useMemo(() => {
     let result = [...requests];
@@ -222,6 +238,7 @@ const MyRequestsPage = () => {
                 <TableRow
                   key={request.id}
                   className="hover:bg-muted/50 cursor-pointer"
+                  onClick={() => handleRowClick(request)}
                 >
                   <TableCell className="font-medium text-foreground">
                     {request.id}
@@ -253,6 +270,12 @@ const MyRequestsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      <RequestDetailsSheet
+        request={selectedRequest}
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+      />
     </div>
   );
 };

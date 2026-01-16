@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Briefcase,
   FileText,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -76,6 +77,7 @@ export function MainSidebar({
   const isDashboardActive = location.pathname === "/" || location.pathname === "/dashboard";
   const isJobsActive = location.pathname === "/my-jobs";
   const isRequestsActive = location.pathname === "/my-requests";
+  const isNewRequestActive = location.pathname === "/create-request";
 
   return (
     <div className="flex min-h-screen flex-col bg-sidebar">
@@ -140,18 +142,32 @@ export function MainSidebar({
 
           {/* Requests - Brand only */}
           {currentUserRole === "BRAND" && (
-            <Button
-              variant={isRequestsActive ? "sidebarActive" : "sidebar"}
-              size="sidebar"
-              onClick={() => handleNavClick("/my-requests")}
-              className={cn(
-                "gap-3 rounded-lg",
-                isRequestsActive && "bg-sidebar-accent"
-              )}
-            >
-              <FileText className="h-5 w-5" />
-              <span>Requests</span>
-            </Button>
+            <>
+              <Button
+                variant={isRequestsActive ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                onClick={() => handleNavClick("/my-requests")}
+                className={cn(
+                  "gap-3 rounded-lg",
+                  isRequestsActive && "bg-sidebar-accent"
+                )}
+              >
+                <FileText className="h-5 w-5" />
+                <span>Requests</span>
+              </Button>
+              <Button
+                variant={isNewRequestActive ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                onClick={() => handleNavClick("/create-request")}
+                className={cn(
+                  "gap-3 rounded-lg pl-8",
+                  isNewRequestActive && "bg-sidebar-accent"
+                )}
+              >
+                <Plus className="h-5 w-5" />
+                <span>New Request</span>
+              </Button>
+            </>
           )}
 
           {/* Settings with submenu */}
