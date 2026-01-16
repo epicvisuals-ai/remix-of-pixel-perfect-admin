@@ -12,6 +12,7 @@ import {
   MessageCircle,
   ChevronDown,
   Briefcase,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -41,7 +42,7 @@ const settingsItems: NavItem[] = [
 ];
 
 // Mock: In real app, this would come from auth context
-const currentUserRole = "CREATOR";
+const currentUserRole: "CREATOR" | "BRAND" = "BRAND";
 
 interface MainSidebarProps {
   onClose?: () => void;
@@ -74,6 +75,7 @@ export function MainSidebar({
   const isActive = (path: string) => location.pathname === path;
   const isDashboardActive = location.pathname === "/" || location.pathname === "/dashboard";
   const isJobsActive = location.pathname === "/my-jobs";
+  const isRequestsActive = location.pathname === "/my-requests";
 
   return (
     <div className="flex min-h-screen flex-col bg-sidebar">
@@ -133,6 +135,22 @@ export function MainSidebar({
             >
               <Briefcase className="h-5 w-5" />
               <span>Jobs</span>
+            </Button>
+          )}
+
+          {/* Requests - Brand only */}
+          {currentUserRole === "BRAND" && (
+            <Button
+              variant={isRequestsActive ? "sidebarActive" : "sidebar"}
+              size="sidebar"
+              onClick={() => handleNavClick("/my-requests")}
+              className={cn(
+                "gap-3 rounded-lg",
+                isRequestsActive && "bg-sidebar-accent"
+              )}
+            >
+              <FileText className="h-5 w-5" />
+              <span>Requests</span>
             </Button>
           )}
 
