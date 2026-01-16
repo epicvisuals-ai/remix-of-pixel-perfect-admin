@@ -1,0 +1,207 @@
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  Settings,
+  Users,
+  User,
+  CreditCard,
+  HelpCircle,
+  LogOut,
+  PanelLeft,
+  Search,
+  MessageCircle,
+  ChevronDown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useLocation, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+}
+
+const settingsItems: NavItem[] = [
+  { icon: Users, label: "Team", path: "/settings/team" },
+  { icon: User, label: "Profile", path: "/settings/profile" },
+  { icon: CreditCard, label: "Billing", path: "/settings/billing" },
+];
+
+interface MainSidebarProps {
+  onClose?: () => void;
+  onToggleSidebar?: () => void;
+  isDesktopSidebarOpen?: boolean;
+}
+
+export function MainSidebar({
+  onClose,
+  onToggleSidebar,
+  isDesktopSidebarOpen,
+}: MainSidebarProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Check if we're in settings section
+  const isInSettings = location.pathname.startsWith("/settings");
+  const [settingsOpen, setSettingsOpen] = useState(isInSettings);
+
+  const handleNavClick = (path: string) => {
+    navigate(path);
+    onClose?.();
+  };
+
+  const handleLogout = () => {
+    navigate("/auth");
+    onClose?.();
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+  const isDashboardActive = location.pathname === "/" || location.pathname === "/dashboard";
+
+  return (
+    <div className="flex min-h-screen flex-col bg-sidebar">
+      {/* Header with Logo */}
+      <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+          <span className="text-lg font-bold text-primary-foreground">L</span>
+        </div>
+        <span className="text-base font-semibold text-foreground">Lovable</span>
+        <div className="ml-auto">
+          {onToggleSidebar ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-lg border border-border bg-card hover:bg-accent"
+              onClick={onToggleSidebar}
+              aria-pressed={isDesktopSidebarOpen}
+              aria-label={isDesktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            >
+              <PanelLeft className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card">
+              <PanelLeft className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-2">
+        <div className="space-y-1">
+          {/* Dashboard */}
+          <Button
+            variant={isDashboardActive ? "sidebarActive" : "sidebar"}
+            size="sidebar"
+            onClick={() => handleNavClick("/dashboard")}
+            className={cn(
+              "gap-3 rounded-lg",
+              isDashboardActive && "bg-sidebar-accent"
+            )}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span>Dashboard</span>
+          </Button>
+
+          {/* Settings with submenu */}
+          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant={isInSettings ? "sidebarActive" : "sidebar"}
+                size="sidebar"
+                className={cn(
+                  "gap-3 rounded-lg justify-between",
+                  isInSettings && "bg-sidebar-accent"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <Settings className="h-5 w-5" />
+                  <span>Settings</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform duration-200",
+                    settingsOpen && "rotate-180"
+                  )}
+                />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pl-4 pt-1">
+              <div className="space-y-1">
+                {settingsItems.map((item) => {
+                  const isItemActive = isActive(item.path);
+                  const Icon = item.icon;
+
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={isItemActive ? "sidebarActive" : "sidebar"}
+                      size="sidebar"
+                      onClick={() => handleNavClick(item.path)}
+                      className={cn(
+                        "gap-3 rounded-lg",
+                        isItemActive && "bg-sidebar-accent"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </nav>
+
+      {/* Footer */}
+      <div className="mt-auto flex items-center gap-3 px-4 pb-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full border border-border bg-card hover:bg-accent"
+            >
+              <HelpCircle className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            sideOffset={8}
+            className="w-56 rounded-xl border border-border bg-card p-1.5 shadow-lg"
+          >
+            <DropdownMenuItem className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors focus:bg-accent focus:text-foreground">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <span>Search Help Center</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors focus:bg-accent focus:text-foreground">
+              <MessageCircle className="h-4 w-4 text-muted-foreground" />
+              <span>Contact support</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="ml-auto h-9 w-9 rounded-full border border-border bg-card hover:bg-accent"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-5 w-5 text-muted-foreground" />
+        </Button>
+      </div>
+    </div>
+  );
+}
