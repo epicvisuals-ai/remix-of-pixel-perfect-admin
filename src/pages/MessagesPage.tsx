@@ -98,8 +98,8 @@ export default function MessagesPage() {
 
       {/* Chat Container */}
       <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border bg-card">
-        {/* Conversations List */}
-        <div className="flex w-80 flex-col border-r border-border">
+        {/* Conversations List - 40% */}
+        <div className="flex w-[40%] flex-col border-r border-border">
           {/* Search Header - matches chat header height */}
           <div className="flex h-[72px] items-center border-b border-border px-4">
             <div className="relative w-full">
@@ -167,8 +167,8 @@ export default function MessagesPage() {
           </ScrollArea>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex flex-1 flex-col">
+        {/* Chat Area - 60% */}
+        <div className="flex w-[60%] flex-col">
           {activeConversation && activeConv ? (
             <>
               {/* Chat Header - matches search header height */}
