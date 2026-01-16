@@ -93,17 +93,6 @@ export function NotificationBell() {
           </div>
           <div className="flex items-center gap-1">
             <NotificationPreferences />
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                onClick={markAllAsRead}
-              >
-                <Check className="h-3 w-3 mr-1" />
-                Mark all read
-              </Button>
-            )}
           </div>
         </div>
 
@@ -187,7 +176,18 @@ export function NotificationBell() {
         )}
 
         {notifications.length > 0 && (
-          <div className="border-t p-2">
+          <div className="border-t p-2 space-y-1">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground hover:text-foreground"
+                onClick={markAllAsRead}
+              >
+                <Check className="h-3 w-3 mr-1" />
+                Mark all as read
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
