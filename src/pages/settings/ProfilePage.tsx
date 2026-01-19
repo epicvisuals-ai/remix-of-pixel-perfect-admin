@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MemberAvatar } from "@/components/admin/MemberAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { userApi } from "@/lib/api";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,10 @@ export default function ProfilePage() {
   const { theme, setTheme } = useTheme();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
+  
+  // Track original values to detect changes
+  const originalFirstName = useRef("");
+  const originalLastName = useRef("");
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -31,6 +36,8 @@ export default function ProfilePage() {
         setFirstName(userData.first_name);
         setLastName(userData.last_name || "");
         setEmail(userData.email);
+        originalFirstName.current = userData.first_name;
+        originalLastName.current = userData.last_name || "";
       } catch (error) {
         console.error("Failed to fetch user data:", error);
       } finally {
@@ -42,6 +49,42 @@ export default function ProfilePage() {
   }, []);
 
   const fullName = `${firstName} ${lastName}`.trim();
+
+  const handleFirstNameBlur = async () => {
+    if (firstName.trim() && firstName !== originalFirstName.current) {
+      try {
+        await userApi.updateMe({ first_name: firstName.trim() });
+        originalFirstName.current = firstName.trim();
+        toast.success("First name updated");
+      } catch (error) {
+        toast.error("Failed to update first name");
+        setFirstName(originalFirstName.current);
+      }
+    }
+  };
+
+  const handleLastNameBlur = async () => {
+    if (lastName !== originalLastName.current) {
+      try {
+        await userApi.updateMe({ last_name: lastName.trim() });
+        originalLastName.current = lastName.trim();
+        toast.success("Last name updated");
+      } catch (error) {
+        toast.error("Failed to update last name");
+        setLastName(originalLastName.current);
+      }
+    }
+  };
+
+  const handleAppearanceChange = async (mode: "light" | "dark" | "system") => {
+    setTheme(mode);
+    try {
+      await userApi.updateMe({ appearance: mode });
+      toast.success("Appearance updated");
+    } catch (error) {
+      toast.error("Failed to update appearance");
+    }
+  };
 
   const handleDeleteAccount = () => {
     if (confirmEmail === email) {
@@ -82,6 +125,7 @@ export default function ProfilePage() {
             <Input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              onBlur={handleFirstNameBlur}
               className="max-w-[250px] rounded-lg border-border bg-card text-right text-sm"
             />
           )}
@@ -96,6 +140,7 @@ export default function ProfilePage() {
             <Input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              onBlur={handleLastNameBlur}
               className="max-w-[250px] rounded-lg border-border bg-card text-right text-sm"
             />
           )}
@@ -123,7 +168,7 @@ export default function ProfilePage() {
               {(["light", "dark", "system"] as const).map((mode) => (
                 <button
                   key={mode}
-                  onClick={() => setTheme(mode)}
+                  onClick={() => handleAppearanceChange(mode)}
                   className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all capitalize ${
                     theme === mode
                       ? "bg-card text-foreground shadow-sm"
