@@ -265,18 +265,20 @@ export default function CreatorProfilePage() {
       <Separator />
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4 text-center">
-          <p className="text-2xl font-bold text-foreground">{creator.stats.projectsCompleted}</p>
-          <p className="text-sm text-muted-foreground">Projects Completed</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 text-center">
-          <p className="text-2xl font-bold text-foreground">{creator.stats.repeatClients}</p>
-          <p className="text-sm text-muted-foreground">Repeat Clients</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 text-center">
-          <p className="text-2xl font-bold text-foreground">{creator.stats.avgResponseTime}</p>
-          <p className="text-sm text-muted-foreground">Avg Response</p>
+      <div className="rounded-xl border border-border bg-card">
+        <div className="grid grid-cols-3 divide-x divide-border">
+          <div className="px-5 py-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{creator.stats.projectsCompleted}</p>
+            <p className="text-sm text-muted-foreground">Projects Completed</p>
+          </div>
+          <div className="px-5 py-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{creator.stats.repeatClients}</p>
+            <p className="text-sm text-muted-foreground">Repeat Clients</p>
+          </div>
+          <div className="px-5 py-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{creator.stats.avgResponseTime}</p>
+            <p className="text-sm text-muted-foreground">Avg Response</p>
+          </div>
         </div>
       </div>
 
