@@ -38,6 +38,18 @@ api.interceptors.response.use(
 
 export default api;
 
+// User profile type
+export interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string | null;
+  default_account_id: string;
+  onboarding_completed: boolean;
+  onboarding_step: number;
+  role: string | null;
+}
+
 // Auth API functions
 export const authApi = {
   signin: (email: string) => 
@@ -49,4 +61,9 @@ export const authApi = {
     axios.post(`${API_BASE_URL}/signin/confirm`, { email, token }, {
       headers: { 'Content-Type': 'application/json' }
     }),
+};
+
+// User API functions
+export const userApi = {
+  getMe: () => api.get<UserProfile>('/users/me'),
 };

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,29 @@ import { ROLES, type AppRole } from "@/types/roles";
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const location = useLocation();
+  
+  // Get initial step from navigation state or localStorage user profile
+  const getInitialStep = () => {
+    const stateStep = location.state?.step;
+    if (typeof stateStep === 'number' && stateStep >= 0 && stateStep <= 2) {
+      return stateStep + 1; // API uses 0-indexed, UI uses 1-indexed
+    }
+    
+    // Fallback: check localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        if (typeof user.onboarding_step === 'number') {
+          return user.onboarding_step + 1;
+        }
+      } catch (e) {}
+    }
+    return 1;
+  };
+  
+  const [currentStep, setCurrentStep] = useState(getInitialStep);
   const [agreed, setAgreed] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
