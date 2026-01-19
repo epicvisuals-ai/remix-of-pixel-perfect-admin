@@ -24,10 +24,11 @@ const OnboardingPage = () => {
   const { setUser } = useAuth();
   
   // Get initial step from navigation state or localStorage user profile
+  // API onboarding_step directly maps to UI step (1, 2, or 3)
   const getInitialStep = () => {
     const stateStep = location.state?.step;
-    if (typeof stateStep === 'number' && stateStep >= 0 && stateStep <= 2) {
-      return stateStep + 1; // API uses 0-indexed, UI uses 1-indexed
+    if (typeof stateStep === 'number' && stateStep >= 1 && stateStep <= 3) {
+      return stateStep;
     }
     
     // Fallback: check localStorage
@@ -35,8 +36,8 @@ const OnboardingPage = () => {
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        if (typeof user.onboarding_step === 'number') {
-          return user.onboarding_step + 1;
+        if (typeof user.onboarding_step === 'number' && user.onboarding_step >= 1) {
+          return user.onboarding_step;
         }
       } catch (e) {}
     }
