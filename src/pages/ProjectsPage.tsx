@@ -261,61 +261,27 @@ export default function ProjectsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <Clock className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold">{stats.activeProjects}</p>
-                <p className="text-sm text-muted-foreground">Active Projects</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold">{stats.pendingReview}</p>
-                <p className="text-sm text-muted-foreground">Pending Review</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-                <FileText className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold">{stats.pendingQuotes}</p>
-                <p className="text-sm text-muted-foreground">Pending Quotes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold">{formatCurrency(stats.totalValue)}</p>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Unified Stats Card */}
+      <Card className="rounded-xl border border-border bg-card">
+        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+          <div className="px-5 py-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{stats.activeProjects}</p>
+            <p className="text-sm text-muted-foreground">Active Projects</p>
+          </div>
+          <div className="px-5 py-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{stats.pendingReview}</p>
+            <p className="text-sm text-muted-foreground">Pending Review</p>
+          </div>
+          <div className="px-5 py-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{stats.pendingQuotes}</p>
+            <p className="text-sm text-muted-foreground">Pending Quotes</p>
+          </div>
+          <div className="px-5 py-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalValue)}</p>
+            <p className="text-sm text-muted-foreground">Total Value</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
