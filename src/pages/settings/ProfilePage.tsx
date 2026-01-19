@@ -13,11 +13,14 @@ import {
 } from "@/components/ui/dialog";
 
 export default function ProfilePage() {
-  const [name, setName] = useState("Oleh Kuprovskyi");
+  const [firstName, setFirstName] = useState("Oleh");
+  const [lastName, setLastName] = useState("Kuprovskyi");
   const [email] = useState("oleh.kuprovskyi@gmail.com");
   const { theme, setTheme } = useTheme();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
+
+  const fullName = `${firstName} ${lastName}`;
 
   const handleDeleteAccount = () => {
     if (confirmEmail === email) {
@@ -34,19 +37,29 @@ export default function ProfilePage() {
       <div className="admin-card animate-fade-in">
         {/* Avatar Section */}
         <div className="admin-card-section flex items-center gap-4">
-          <MemberAvatar name={name} className="h-16 w-16 text-xl" />
+          <MemberAvatar name={fullName} className="h-16 w-16 text-xl" />
           <div>
-            <p className="text-base font-medium text-foreground">{name}</p>
+            <p className="text-base font-medium text-foreground">{fullName}</p>
             {/* <p className="text-sm text-muted-foreground">{email}</p> */}
           </div>
         </div>
 
-        {/* Name Field */}
+        {/* First Name Field */}
         <div className="admin-card-section flex items-center justify-between gap-4">
-          <span className="text-sm font-medium text-foreground">Full Name</span>
+          <span className="text-sm font-medium text-foreground">First Name</span>
           <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="max-w-[250px] rounded-lg border-border bg-card text-right text-sm"
+          />
+        </div>
+
+        {/* Last Name Field */}
+        <div className="admin-card-section flex items-center justify-between gap-4">
+          <span className="text-sm font-medium text-foreground">Last Name</span>
+          <Input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             className="max-w-[250px] rounded-lg border-border bg-card text-right text-sm"
           />
         </div>
