@@ -90,3 +90,39 @@ export const onboardingApi = {
   step2: (data: OnboardingStep2Request) => api.post<OnboardingResponse>('/onboarding/step-2', data),
   step3: () => api.post<OnboardingResponse>('/onboarding/step-3'),
 };
+
+// Team member types
+export interface TeamMember {
+  id: string;
+  role: string;
+  user_id: string;
+  status: string;
+  name: string;
+  first_name: string | null;
+  last_name: string | null;
+  joined_at: string;
+}
+
+export interface TeamMembersResponse {
+  items: TeamMember[];
+  next_cursor: string | null;
+}
+
+export interface InviteTeamMemberRequest {
+  email: string;
+  role: string;
+}
+
+export interface InviteTeamMemberResponse {
+  message: string;
+  email: string;
+  user_exists: boolean;
+  status: string;
+}
+
+// Team API functions
+export const teamApi = {
+  getTeamMembers: () => api.get<TeamMembersResponse>('/team_members'),
+  inviteTeamMember: (data: InviteTeamMemberRequest) =>
+    api.post<InviteTeamMemberResponse>('/team_members/invite', data),
+};

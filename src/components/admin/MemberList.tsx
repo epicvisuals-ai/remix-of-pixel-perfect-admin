@@ -28,20 +28,26 @@ interface Member {
 
 interface MemberListProps {
   members: Member[];
-  onInvite?: (email: string, role: string) => void;
+  onInvite?: (email: string, role: string) => Promise<void>;
 }
 
 export function MemberList({ members, onInvite }: MemberListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Admin");
+  const [role, setRole] = useState("admin");
+  const [isInviting, setIsInviting] = useState(false);
 
-  const handleInvite = () => {
+  const handleInvite = async () => {
     if (email.trim() && onInvite) {
-      onInvite(email.trim(), role);
-      setEmail("");
-      setRole("Admin");
-      setDialogOpen(false);
+      setIsInviting(true);
+      try {
+        await onInvite(email.trim(), role);
+        setEmail("");
+        setRole("admin");
+        setDialogOpen(false);
+      } finally {
+        setIsInviting(false);
+      }
     }
   };
 
@@ -107,6 +113,11 @@ export function MemberList({ members, onInvite }: MemberListProps) {
                 placeholder="Enter email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && email.trim() && !isInviting) {
+                    handleInvite();
+                  }
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -116,14 +127,15 @@ export function MemberList({ members, onInvite }: MemberListProps) {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="brand">Brand</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={handleInvite} disabled={!email.trim()}>
-              Send invite
+            <Button onClick={handleInvite} disabled={!email.trim() || isInviting}>
+              {isInviting ? "Sending..." : "Send invite"}
             </Button>
           </div>
         </DialogContent>
