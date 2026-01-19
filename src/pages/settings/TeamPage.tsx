@@ -33,7 +33,7 @@ export default function TeamPage() {
         const transformedMembers = response.data.items.map((member) => ({
           id: member.id,
           name: member.name,
-          email: member.user_id, // Using user_id as email for now
+          email: member.email,
           role: member.role.charAt(0).toUpperCase() + member.role.slice(1),
           isCurrentUser: member.user_id === userResponse.data.id,
         }));
@@ -69,7 +69,7 @@ export default function TeamPage() {
       const transformedMembers = teamResponse.data.items.map((member) => ({
         id: member.id,
         name: member.name,
-        email: member.user_id,
+        email: member.email,
         role: member.role.charAt(0).toUpperCase() + member.role.slice(1),
         isCurrentUser: member.user_id === currentUserId,
       }));

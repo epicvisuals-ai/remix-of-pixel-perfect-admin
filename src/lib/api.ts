@@ -97,6 +97,7 @@ export interface TeamMember {
   role: string;
   user_id: string;
   status: string;
+  email: string;
   name: string;
   first_name: string | null;
   last_name: string | null;
