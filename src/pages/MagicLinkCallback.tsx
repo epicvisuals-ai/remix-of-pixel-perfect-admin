@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { authApi } from '@/lib/api';
+import { authApi, userApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
@@ -10,9 +10,14 @@ const MagicLinkCallback = () => {
   const { setToken } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const hasConfirmed = useRef(false);
 
   useEffect(() => {
     const confirmAuth = async () => {
+      // Prevent duplicate calls
+      if (hasConfirmed.current) return;
+      hasConfirmed.current = true;
+
       const token = searchParams.get('token');
       const email = searchParams.get('email') ?? localStorage.getItem('pending_auth_email');
 
@@ -30,20 +35,31 @@ const MagicLinkCallback = () => {
 
       try {
         const response = await authApi.confirmSignin(email, token);
-        const { access_token, user } = response.data;
+        const { access_token } = response.data;
         
         if (access_token) {
+          // Store token first so the api interceptor can use it
+          localStorage.setItem('auth_token', access_token);
           setToken(access_token);
-          // Store user data for later use
-          if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-          }
           localStorage.removeItem('pending_auth_email');
+          
+          // Fetch user profile to check onboarding status
+          const userResponse = await userApi.getMe();
+          const userProfile = userResponse.data;
+          localStorage.setItem('user', JSON.stringify(userProfile));
+          
           setStatus('success');
           
-          // Navigate to dashboard after a brief delay
+          // Navigate based on onboarding status
           setTimeout(() => {
-            navigate('/dashboard', { replace: true });
+            if (!userProfile.onboarding_completed) {
+              navigate('/onboarding', { 
+                replace: true, 
+                state: { step: userProfile.onboarding_step } 
+              });
+            } else {
+              navigate('/dashboard', { replace: true });
+            }
           }, 1500);
         } else {
           setStatus('error');
