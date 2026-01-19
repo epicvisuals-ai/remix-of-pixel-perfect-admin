@@ -114,36 +114,38 @@ export function NotificationBell() {
           </div>
         </div>
 
-        <ScrollArea className="max-h-[400px]">
-          {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Bell className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm font-medium">No notifications</p>
-              <p className="text-xs">You're all caught up!</p>
-            </div>
-          ) : (
-            <div>
-              {activeGroups.map((group) => (
-                <div key={group}>
-                  <div className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm px-4 py-1.5 border-b">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {groupLabels[group]}
-                    </span>
+        <ScrollArea className="h-[400px]">
+          <div className="min-h-full">
+            {notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Bell className="h-10 w-10 mb-3 opacity-30" />
+                <p className="text-sm font-medium">No notifications</p>
+                <p className="text-xs">You're all caught up!</p>
+              </div>
+            ) : (
+              <div>
+                {activeGroups.map((group) => (
+                  <div key={group}>
+                    <div className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm px-4 py-1.5 border-b">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {groupLabels[group]}
+                      </span>
+                    </div>
+                    <div className="divide-y overflow-hidden">
+                      {groupedNotifications[group].map((notification) => (
+                        <NotificationItem
+                          key={notification.id}
+                          notification={notification}
+                          onDismiss={() => clearNotification(notification.id)}
+                          onClick={() => handleNotificationClick(notification)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="divide-y overflow-hidden">
-                    {groupedNotifications[group].map((notification) => (
-                      <NotificationItem
-                        key={notification.id}
-                        notification={notification}
-                        onDismiss={() => clearNotification(notification.id)}
-                        onClick={() => handleNotificationClick(notification)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </ScrollArea>
 
         {notificationPermission !== "granted" && (
