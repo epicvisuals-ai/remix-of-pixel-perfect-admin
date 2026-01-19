@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Shield, Coins, Users, Sparkles, Zap, Check } from "lucide-react";
+import { FileText, Shield, Coins, Users, Sparkles, Zap, Check, Loader2 } from "lucide-react";
 import { ROLES, type AppRole } from "@/types/roles";
+import { onboardingApi } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setUser } = useAuth();
   
   // Get initial step from navigation state or localStorage user profile
   const getInitialStep = () => {
@@ -41,6 +45,7 @@ const OnboardingPage = () => {
   
   const [currentStep, setCurrentStep] = useState(getInitialStep);
   const [agreed, setAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -48,16 +53,61 @@ const OnboardingPage = () => {
     role: "",
   });
 
-  const handleContinue = () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      navigate("/dashboard");
+  const updateLocalUser = (onboardingStep: number, onboardingCompleted: boolean) => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        user.onboarding_step = onboardingStep;
+        user.onboarding_completed = onboardingCompleted;
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+      } catch (e) {}
     }
   };
 
-  const handleSkip = () => {
-    navigate("/dashboard");
+  const handleContinue = async () => {
+    setIsLoading(true);
+    
+    try {
+      if (currentStep === 1) {
+        const response = await onboardingApi.step1();
+        updateLocalUser(response.data.onboarding_step, response.data.onboarding_completed);
+        setCurrentStep(2);
+      } else if (currentStep === 2) {
+        const response = await onboardingApi.step2({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          company_name: formData.companyName,
+          role: formData.role.toUpperCase() || 'BRAND',
+        });
+        updateLocalUser(response.data.onboarding_step, response.data.onboarding_completed);
+        setCurrentStep(3);
+      }
+    } catch (error) {
+      console.error('Onboarding step failed:', error);
+      toast.error('Failed to save progress. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await onboardingApi.step3();
+      updateLocalUser(response.data.onboarding_step, response.data.onboarding_completed);
+      
+      if (response.data.onboarding_completed) {
+        navigate("/dashboard", { replace: true });
+      }
+    } catch (error) {
+      console.error('Onboarding step 3 failed:', error);
+      toast.error('Failed to complete onboarding. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const canContinue = () => {
@@ -317,9 +367,10 @@ const OnboardingPage = () => {
           </span>
           <Button
             onClick={currentStep === 3 ? handleSkip : handleContinue}
-            disabled={!canContinue()}
+            disabled={!canContinue() || isLoading}
             className="bg-cyan-500 hover:bg-cyan-600 text-white disabled:opacity-50"
           >
+            {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {currentStep === 3 ? "Skip" : "Continue"}
           </Button>
         </div>

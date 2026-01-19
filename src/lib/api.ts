@@ -67,3 +67,24 @@ export const authApi = {
 export const userApi = {
   getMe: () => api.get<UserProfile>('/users/me'),
 };
+
+// Onboarding response type
+export interface OnboardingResponse {
+  onboarding_step: number;
+  onboarding_completed: boolean;
+}
+
+// Onboarding step 2 request type
+export interface OnboardingStep2Request {
+  first_name: string;
+  last_name: string;
+  company_name: string;
+  role: string;
+}
+
+// Onboarding API functions
+export const onboardingApi = {
+  step1: () => api.post<OnboardingResponse>('/onboarding/step-1'),
+  step2: (data: OnboardingStep2Request) => api.post<OnboardingResponse>('/onboarding/step-2', data),
+  step3: () => api.post<OnboardingResponse>('/onboarding/step-3'),
+};

@@ -7,7 +7,7 @@ import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 const MagicLinkCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setToken } = useAuth();
+  const { setToken, setUser } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const hasConfirmed = useRef(false);
@@ -46,7 +46,7 @@ const MagicLinkCallback = () => {
           // Fetch user profile to check onboarding status
           const userResponse = await userApi.getMe();
           const userProfile = userResponse.data;
-          localStorage.setItem('user', JSON.stringify(userProfile));
+          setUser(userProfile);
           
           setStatus('success');
           
@@ -72,7 +72,7 @@ const MagicLinkCallback = () => {
     };
 
     confirmAuth();
-  }, [searchParams, navigate, setToken]);
+  }, [searchParams, navigate, setToken, setUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
