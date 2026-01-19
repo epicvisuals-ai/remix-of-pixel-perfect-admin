@@ -50,7 +50,11 @@ const App = () => (
                     {/* Auth Routes (public) */}
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/auth/magic-link" element={<MagicLinkCallback />} />
-                    <Route path="/onboarding" element={<OnboardingPage />} />
+                    <Route path="/onboarding" element={
+                      <ProtectedRoute>
+                        <OnboardingPage />
+                      </ProtectedRoute>
+                    } />
                     
                     {/* Protected Routes with Main Layout */}
                     <Route element={
