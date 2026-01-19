@@ -35,6 +35,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { type AppRole } from "@/types/roles";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavItem {
   icon: React.ElementType;
@@ -49,9 +50,6 @@ const settingsItems: NavItem[] = [
   { icon: CreditCard, label: "Billing", path: "/settings/billing" },
 ];
 
-// Mock: In real app, this would come from auth context
-const currentUserRole: AppRole = "superadmin";
-
 interface MainSidebarProps {
   onClose?: () => void;
   onToggleSidebar?: () => void;
@@ -65,7 +63,11 @@ export function MainSidebar({
 }: MainSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const { user, logout } = useAuth();
+
+  // Get user role from auth context
+  const currentUserRole = user?.role as AppRole | null;
+
   // Check if we're in settings section
   const isInSettings = location.pathname.startsWith("/settings");
   const [settingsOpen, setSettingsOpen] = useState(isInSettings);
@@ -76,7 +78,7 @@ export function MainSidebar({
   };
 
   const handleLogout = () => {
-    navigate("/auth");
+    logout();
     onClose?.();
   };
 
