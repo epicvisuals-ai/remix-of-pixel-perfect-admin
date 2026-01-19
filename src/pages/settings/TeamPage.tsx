@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { TeamCard } from "@/components/admin/TeamCard";
+import { TeamCardSkeleton } from "@/components/admin/TeamCardSkeleton";
 import { MemberList } from "@/components/admin/MemberList";
+import { MemberListSkeleton } from "@/components/admin/MemberListSkeleton";
 import { toast } from "@/hooks/use-toast";
 import { teamApi, userApi } from "@/lib/api";
 
@@ -87,7 +89,8 @@ export default function TeamPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-xl font-semibold text-foreground">Team</h1>
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <TeamCardSkeleton />
+        <MemberListSkeleton />
       </div>
     );
   }
