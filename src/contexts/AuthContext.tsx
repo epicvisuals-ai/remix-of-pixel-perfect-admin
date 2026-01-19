@@ -89,9 +89,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    // Clear JWT token and user from state
     setToken(null);
     setUser(null);
-    window.location.href = '/auth';
+
+    // Explicitly clear all auth-related items from localStorage
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('pending_auth_email');
+
+    // Navigate to auth page using React Router
+    navigate('/auth', { replace: true });
   };
 
   return (
