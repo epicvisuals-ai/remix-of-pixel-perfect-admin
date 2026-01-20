@@ -29,6 +29,15 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -215,6 +224,11 @@ const isFullEditStatus = (status: Request["status"]) => {
   return ["created", "submitter", "submitted", "in_review", "rejected"].includes(normalized);
 };
 
+const canDeleteRequestStatus = (status: Request["status"]) => {
+  const normalized = normalizeRequestStatus(status);
+  return ["created", "submitted", "in_review"].includes(normalized);
+};
+
 export function RequestDetailsSheet({
   request,
   open,
@@ -237,6 +251,8 @@ export function RequestDetailsSheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingRequest, setIsEditingRequest] = useState(false);
   const [isSavingRequest, setIsSavingRequest] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [requestStatus, setRequestStatus] = useState<Request["status"]>("Created");
   const [requestDetails, setRequestDetails] = useState<{
     brief: string;
@@ -459,6 +475,31 @@ export function RequestDetailsSheet({
       setIsSavingRequest(false);
     }
   };
+
+  const handleDeleteRequest = useCallback(async () => {
+    if (!request?.id || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const response = await requestApi.deleteRequest(request.id);
+      if (response.status === 200) {
+        const message = response.data?.message ?? response.data?.data?.message ?? "Request deleted.";
+        toast({
+          title: message,
+        });
+        setIsDeleteDialogOpen(false);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Failed to delete request:", error);
+      const response = (error as { response?: { data?: { message?: string } } }).response;
+      toast({
+        title: response?.data?.message ?? "Unable to delete request.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [isDeleting, onOpenChange, request?.id, toast]);
 
   // Simulate creator typing indicator (mock - would be real-time in production)
   useEffect(() => {
@@ -1258,6 +1299,34 @@ export function RequestDetailsSheet({
                     <Edit2 className="h-4 w-4 mr-2" />
                     Edit Request
                   </Button>
+                )}
+                {canDeleteRequestStatus(requestStatus) && (
+                  <AlertDialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                  >
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      Delete
+                    </Button>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteRequest}
+                          disabled={isDeleting}
+                        >
+                          Yes
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
                 {requestStatus === "Created" && (
                   <Button

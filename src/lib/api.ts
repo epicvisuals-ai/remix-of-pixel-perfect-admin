@@ -139,6 +139,7 @@ export interface CreateRequestPayload {
 export const requestApi = {
   createRequest: (data: CreateRequestPayload) => api.post('/requests', data),
   submitRequest: (requestId: string) => api.post(`/requests/${requestId}/submit`),
+  deleteRequest: (requestId: string) => api.delete(`/requests/${requestId}`),
 };
 
 // Creator types
