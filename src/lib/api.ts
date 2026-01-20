@@ -177,9 +177,46 @@ export interface CreatorsAggregateResponse {
   };
 }
 
+// Creator detail response types
+export interface CreatorPortfolioItem {
+  id: string;
+  title: string;
+  imageUrl: string;
+  displayOrder: number;
+  isFeatured: boolean;
+}
+
+export interface CreatorDetailResponse {
+  success: boolean;
+  data: {
+    id: string;
+    userId: string;
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+    specialty: string;
+    bio: string;
+    location: string;
+    memberSince: string;
+    rating: number;
+    reviewCount: number;
+    projectsCompleted: number;
+    repeatClients: number;
+    avgResponseTimeMinutes: number;
+    isAvailable: boolean;
+    avatar: string | null;
+    coverImage: string | null;
+    skills: string[];
+    portfolio: CreatorPortfolioItem[];
+    recentReviews: any[];
+  };
+}
+
 // Creators API functions
 export const creatorsApi = {
   getAggregate: (q?: string) => api.get<CreatorsAggregateResponse>('/creators/aggregate', { params: q ? { q } : {} }),
+  getById: (creatorId: string) => api.get<CreatorDetailResponse>(`/creators/${creatorId}`),
 };
 
 // Favorites types

@@ -1,14 +1,17 @@
+import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 interface WorkedWithCardProps {
+  creatorId: string;
   name: string;
   avatar: string;
   collaborationCount: number;
   specialty: string;
 }
 
-export function WorkedWithCard({ name, avatar, collaborationCount, specialty }: WorkedWithCardProps) {
+export function WorkedWithCard({ creatorId, name, avatar, collaborationCount, specialty }: WorkedWithCardProps) {
+  const navigate = useNavigate();
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -29,7 +32,7 @@ export function WorkedWithCard({ name, avatar, collaborationCount, specialty }: 
           {collaborationCount} project{collaborationCount !== 1 ? "s" : ""} • {specialty}
         </p>
       </div>
-      <Button variant="outline" size="sm" className="shrink-0">
+      <Button variant="outline" size="sm" className="shrink-0" onClick={() => navigate(`/creators/${creatorId}`)}>
         View
       </Button>
     </div>
