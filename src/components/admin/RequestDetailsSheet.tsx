@@ -40,6 +40,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -48,12 +49,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import api from "@/lib/api";
 
 interface Creator {
   id: string;
   name: string;
   avatar?: string;
   specialty: string;
+}
+
+interface CreatorApiItem {
+  id: string;
+  specialty?: string | null;
+  avatar?: string | null;
+  user?: {
+    firstName?: string | null;
+    lastName?: string | null;
+  } | null;
 }
 
 interface Attachment {
@@ -97,14 +109,6 @@ interface RequestDetailsSheetProps {
 
 const getContentTypeLabel = (contentType: Request["contentType"]) =>
   contentType === "video" ? "Video" : "Image";
-
-// Mock creators
-const availableCreators: Creator[] = [
-  { id: "c1", name: "Alex Morgan", specialty: "Video Production", avatar: "" },
-  { id: "c2", name: "Sam Chen", specialty: "Graphic Design", avatar: "" },
-  { id: "c3", name: "Jordan Lee", specialty: "Motion Graphics", avatar: "" },
-  { id: "c4", name: "Casey Taylor", specialty: "Photography", avatar: "" },
-];
 
 // Mock comments with attachments and read receipts
 const mockComments: Comment[] = [
@@ -195,6 +199,9 @@ export function RequestDetailsSheet({
 }: RequestDetailsSheetProps) {
   const [selectedCreatorId, setSelectedCreatorId] = useState<string>("");
   const [assignedCreator, setAssignedCreator] = useState<Creator | null>(null);
+  const [availableCreators, setAvailableCreators] = useState<Creator[]>([]);
+  const [creatorsLoading, setCreatorsLoading] = useState(false);
+  const [creatorsError, setCreatorsError] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [newComment, setNewComment] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -223,6 +230,53 @@ export function RequestDetailsSheet({
     setZoomLevel(1);
     setPanPosition({ x: 0, y: 0 });
   }, [lightboxIndex, lightboxOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+    let isActive = true;
+
+    const fetchCreators = async () => {
+      setCreatorsLoading(true);
+      setCreatorsError(null);
+      try {
+        const response = await api.get("/creators");
+        const responseData = response.data?.data ?? response.data?.items ?? response.data ?? [];
+        const creatorsList = Array.isArray(responseData)
+          ? responseData
+          : responseData?.items ?? [];
+        const mappedCreators: Creator[] = (creatorsList as CreatorApiItem[]).map((creator) => {
+          const firstName = creator.user?.firstName?.trim() ?? "";
+          const lastName = creator.user?.lastName?.trim() ?? "";
+          const name = `${firstName} ${lastName}`.trim() || "Unknown Creator";
+          return {
+            id: creator.id,
+            name,
+            specialty: creator.specialty ?? "Unknown specialty",
+            avatar: creator.avatar ?? undefined,
+          };
+        });
+        if (isActive) {
+          setAvailableCreators(mappedCreators);
+        }
+      } catch (error) {
+        console.error("Failed to fetch creators:", error);
+        if (isActive) {
+          setAvailableCreators([]);
+          setCreatorsError("Unable to load creators");
+        }
+      } finally {
+        if (isActive) {
+          setCreatorsLoading(false);
+        }
+      }
+    };
+
+    fetchCreators();
+
+    return () => {
+      isActive = false;
+    };
+  }, [open]);
 
   // Simulate creator typing indicator (mock - would be real-time in production)
   useEffect(() => {
@@ -589,33 +643,64 @@ export function RequestDetailsSheet({
               </div>
             ) : (
               <div className="flex gap-2">
-                <Select value={selectedCreatorId} onValueChange={setSelectedCreatorId}>
+                <Select
+                  value={selectedCreatorId}
+                  onValueChange={setSelectedCreatorId}
+                  disabled={creatorsLoading || !!creatorsError}
+                >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select a creator..." />
+                    <SelectValue
+                      placeholder={
+                        creatorsLoading
+                          ? "Loading creators..."
+                          : creatorsError
+                          ? "Unable to load creators"
+                          : "Select a creator..."
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableCreators.map((creator) => (
-                      <SelectItem key={creator.id} value={creator.id}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {creator.name.split(" ").map((n) => n[0]).join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span>{creator.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {creator.specialty}
-                            </span>
+                    {creatorsLoading ? (
+                      <div className="px-2 py-2 space-y-2">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-full" />
+                      </div>
+                    ) : creatorsError ? (
+                      <div className="px-2 py-2 text-sm text-muted-foreground">
+                        {creatorsError}
+                      </div>
+                    ) : availableCreators.length === 0 ? (
+                      <div className="px-2 py-2 text-sm text-muted-foreground">
+                        No creators available
+                      </div>
+                    ) : (
+                      availableCreators.map((creator) => (
+                        <SelectItem key={creator.id} value={creator.id}>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              {creator.avatar ? (
+                                <AvatarImage src={creator.avatar} alt={creator.name} />
+                              ) : null}
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {creator.name.split(" ").map((n) => n[0]).join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span>{creator.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {creator.specialty}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </SelectItem>
-                    ))}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <Button
                   onClick={handleAssignCreator}
-                  disabled={!selectedCreatorId}
+                  disabled={!selectedCreatorId || creatorsLoading || !!creatorsError}
                   size="icon"
                 >
                   <UserPlus className="h-4 w-4" />
