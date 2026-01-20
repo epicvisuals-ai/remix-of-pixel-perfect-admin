@@ -179,7 +179,7 @@ export interface CreatorsAggregateResponse {
 
 // Creators API functions
 export const creatorsApi = {
-  getAggregate: () => api.get<CreatorsAggregateResponse>('/creators/aggregate'),
+  getAggregate: (q?: string) => api.get<CreatorsAggregateResponse>('/creators/aggregate', { params: q ? { q } : {} }),
 };
 
 // Favorites types
