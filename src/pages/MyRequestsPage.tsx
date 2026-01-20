@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Image, Video, Plus, Search, ArrowUpDown, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { RequestDetailsSheet } from "@/components/admin/RequestDetailsSheet";
+import { API_BASE_URL } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -110,8 +111,8 @@ const MyRequestsPage = () => {
 
     const queryString = params.toString();
     const url = queryString
-      ? `/v1.0/requests?${queryString}`
-      : "/v1.0/requests";
+      ? `${API_BASE_URL}/requests?${queryString}`
+      : `${API_BASE_URL}/requests`;
 
     const fetchRequests = async () => {
       try {
