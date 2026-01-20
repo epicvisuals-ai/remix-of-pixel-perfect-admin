@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -80,10 +81,13 @@ const MyRequestsPage = () => {
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isActive = true;
     const controller = new AbortController();
     const params = new URLSearchParams();
+    setIsLoading(true);
 
     if (statusFilter !== "all") {
       params.set("status", statusFilter.toLowerCase());
@@ -136,12 +140,17 @@ const MyRequestsPage = () => {
         console.error("Failed to load requests", error);
         setRequests([]);
         setMeta(null);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchRequests();
 
     return () => {
+      isActive = false;
       controller.abort();
     };
   }, [searchQuery, sortOption, statusFilter]);
@@ -225,7 +234,30 @@ const MyRequestsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {requests.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={`request-skeleton-${index}`}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4 rounded-full" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : requests.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={5}

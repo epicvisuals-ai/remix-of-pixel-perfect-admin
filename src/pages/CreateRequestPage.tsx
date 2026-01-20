@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Image, Video, CalendarIcon } from "lucide-react";
+import { Image, Video, CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ const CreateRequestPage = () => {
   const [tone, setTone] = useState("");
   const [budget, setBudget] = useState("");
   const [deadline, setDeadline] = useState<Date>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +86,7 @@ const CreateRequestPage = () => {
     };
 
     try {
+      setIsSubmitting(true);
       const response = await requestApi.createRequest(payload);
       if (response.status === 201) {
         toast({
@@ -106,6 +108,8 @@ const CreateRequestPage = () => {
         description: "Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -233,8 +237,15 @@ const CreateRequestPage = () => {
         </div>
 
         {/* Submit */}
-        <Button type="submit" size="lg" className="w-full">
-          Submit Request
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            "Submit Request"
+          )}
         </Button>
       </form>
     </div>
