@@ -289,18 +289,23 @@ export function RequestDetailsSheet({
   }, [open]);
 
   useEffect(() => {
-    if (!open || selectedCreatorId) return;
+    if (!open) return;
     const assignedCreatorId = request?.assignedCreator?.id;
-    if (!assignedCreatorId || availableCreators.length === 0) return;
+    const assignedCreatorUserId = request?.assignedCreator?.userId;
+    if ((!assignedCreatorId && !assignedCreatorUserId) || availableCreators.length === 0) {
+      return;
+    }
 
-    const matchedCreator = availableCreators.find(
-      (creator) => creator.userId === assignedCreatorId
+    const matchedCreator = availableCreators.find((creator) =>
+      [assignedCreatorId, assignedCreatorUserId].includes(creator.id) ||
+      [assignedCreatorId, assignedCreatorUserId].includes(creator.userId)
     );
 
     if (matchedCreator) {
+      setAssignedCreator(matchedCreator);
       setSelectedCreatorId(matchedCreator.id);
     }
-  }, [availableCreators, open, request, selectedCreatorId]);
+  }, [availableCreators, open, request?.assignedCreator]);
 
   const handleSubmitForReview = useCallback(async () => {
     if (!request?.id || isSubmitting) return;
