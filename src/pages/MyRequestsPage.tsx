@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image, Video, Plus, Search, ArrowUpDown, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -33,47 +33,16 @@ interface Request {
   deadline?: Date;
 }
 
-// Mock data
-const mockRequests: Request[] = [
-  {
-    id: "req-001",
-    type: "Image",
-    budget: 250,
-    status: "Submitted",
-    createdAt: new Date("2024-01-20"),
-    brief: "Need a hero banner for our new SaaS product launch. The banner should convey innovation and trust. We want a modern, clean aesthetic with our brand colors (blue and white). Include imagery that suggests cloud technology and seamless integration.",
-    toneOfVoice: "Professional",
-    deadline: new Date("2024-02-15"),
-  },
-  {
-    id: "req-002",
-    type: "Video",
-    budget: 500,
-    status: "Created",
-    createdAt: new Date("2024-01-19"),
-    brief: "Promotional video for social media campaign. 30-60 seconds, highlighting our new feature release. Should be dynamic and engaging for a younger audience.",
-    toneOfVoice: "Playful",
-  },
-  {
-    id: "req-003",
-    type: "Image",
-    budget: 350,
-    status: "In Progress",
-    createdAt: new Date("2024-01-18"),
-    brief: "Create a series of social media graphics for Instagram and LinkedIn. Need 5 variations with consistent branding. Focus on user testimonials and product benefits.",
-    toneOfVoice: "Cinematic",
-    deadline: new Date("2024-02-01"),
-  },
-  {
-    id: "req-004",
-    type: "Video",
-    budget: 400,
-    status: "Approved",
-    createdAt: new Date("2024-01-15"),
-    brief: "30-second promotional video for our mobile app. Showcase the main features: easy signup, dashboard overview, and notification system.",
-    toneOfVoice: "Minimalist",
-  },
-];
+interface ApiRequest extends Omit<Request, "createdAt" | "deadline"> {
+  createdAt: string;
+  deadline?: string;
+}
+
+interface RequestsResponseMeta {
+  total?: number;
+  page?: number;
+  pageSize?: number;
+}
 
 const getStatusBadgeVariant = (status: Request["status"]) => {
   switch (status) {
@@ -104,51 +73,83 @@ type StatusFilter = "all" | Request["status"];
 
 const MyRequestsPage = () => {
   const navigate = useNavigate();
-  const [requests] = useState<Request[]>(mockRequests);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [, setMeta] = useState<RequestsResponseMeta | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams();
+
+    if (statusFilter !== "all") {
+      params.set("status", statusFilter.toLowerCase());
+    }
+
+    const sortMap: Record<SortOption, { sortBy: string; sortOrder: string }> = {
+      "date-desc": { sortBy: "createdAt", sortOrder: "desc" },
+      "date-asc": { sortBy: "createdAt", sortOrder: "asc" },
+      "budget-desc": { sortBy: "budget", sortOrder: "desc" },
+      "budget-asc": { sortBy: "budget", sortOrder: "asc" },
+    };
+
+    const { sortBy, sortOrder } = sortMap[sortOption];
+    params.set("sortBy", sortBy);
+    params.set("sortOrder", sortOrder);
+
+    if (searchQuery.trim()) {
+      params.set("search", searchQuery.trim());
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/v1.0/requests?${queryString}`
+      : "/v1.0/requests";
+
+    const fetchRequests = async () => {
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch requests");
+        }
+
+        const payload = await response.json();
+        const items = Array.isArray(payload?.data)
+          ? (payload.data as ApiRequest[])
+          : [];
+        const mappedRequests = items.map((item) => ({
+          ...item,
+          createdAt: new Date(item.createdAt),
+          deadline: item.deadline ? new Date(item.deadline) : undefined,
+        }));
+
+        setRequests(mappedRequests);
+        setMeta(payload?.meta ?? null);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        console.error("Failed to load requests", error);
+        setRequests([]);
+        setMeta(null);
+      }
+    };
+
+    fetchRequests();
+
+    return () => {
+      controller.abort();
+    };
+  }, [searchQuery, sortOption, statusFilter]);
+
   const handleRowClick = (request: Request) => {
     setSelectedRequest(request);
     setIsDetailsOpen(true);
   };
-
-  const filteredAndSortedRequests = useMemo(() => {
-    let result = [...requests];
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((req) => req.id.toLowerCase().includes(query));
-    }
-
-    // Status filter
-    if (statusFilter !== "all") {
-      result = result.filter((req) => req.status === statusFilter);
-    }
-
-    // Sorting
-    result.sort((a, b) => {
-      switch (sortOption) {
-        case "date-desc":
-          return b.createdAt.getTime() - a.createdAt.getTime();
-        case "date-asc":
-          return a.createdAt.getTime() - b.createdAt.getTime();
-        case "budget-desc":
-          return b.budget - a.budget;
-        case "budget-asc":
-          return a.budget - b.budget;
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  }, [requests, searchQuery, statusFilter, sortOption]);
-
 
   return (
     <div className="space-y-6">
@@ -224,7 +225,7 @@ const MyRequestsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAndSortedRequests.length === 0 ? (
+            {requests.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={5}
@@ -234,7 +235,7 @@ const MyRequestsPage = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAndSortedRequests.map((request) => (
+              requests.map((request) => (
                 <TableRow
                   key={request.id}
                   className="hover:bg-muted/50 cursor-pointer"
