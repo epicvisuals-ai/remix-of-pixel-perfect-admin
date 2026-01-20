@@ -78,7 +78,7 @@ interface Comment {
 
 interface Request {
   id: string;
-  type: "Image" | "Video";
+  contentType: "image" | "video";
   budget: number;
   status: "Created" | "Submitted" | "In Progress" | "Approved" | "Rejected";
   createdAt: Date;
@@ -94,6 +94,9 @@ interface RequestDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const getContentTypeLabel = (contentType: Request["contentType"]) =>
+  contentType === "video" ? "Video" : "Image";
 
 // Mock creators
 const availableCreators: Creator[] = [
@@ -631,7 +634,7 @@ export function RequestDetailsSheet({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                {request.type === "Video" ? (
+                {request.contentType === "video" ? (
                   <Video className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <Image className="h-4 w-4 text-muted-foreground" />
@@ -639,7 +642,7 @@ export function RequestDetailsSheet({
                 <div>
                   <p className="text-xs text-muted-foreground">Type</p>
                   <p className="text-sm font-medium text-foreground">
-                    {request.type}
+                    {getContentTypeLabel(request.contentType)}
                   </p>
                 </div>
               </div>
