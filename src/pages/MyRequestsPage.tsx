@@ -26,7 +26,7 @@ import {
 
 interface Request {
   id: string;
-  type: "Image" | "Video";
+  contentType: "image" | "video";
   budget: number;
   status: "Created" | "Submitted" | "In Progress" | "Approved" | "Rejected";
   createdAt: Date;
@@ -35,7 +35,9 @@ interface Request {
   deadline?: Date;
 }
 
-interface ApiRequest extends Omit<Request, "createdAt" | "deadline"> {
+interface ApiRequest extends Omit<Request, "createdAt" | "deadline" | "contentType"> {
+  contentType?: "image" | "video";
+  type?: "Image" | "Video" | "image" | "video";
   createdAt: string;
   deadline?: string;
 }
@@ -63,8 +65,14 @@ const getStatusBadgeVariant = (status: Request["status"]) => {
   }
 };
 
-const TypeIcon = ({ type }: { type: Request["type"] }) => {
-  if (type === "Video") {
+const normalizeContentType = (value?: string): Request["contentType"] =>
+  value?.toLowerCase() === "video" ? "video" : "image";
+
+const getContentTypeLabel = (contentType: Request["contentType"]) =>
+  contentType === "video" ? "Video" : "Image";
+
+const TypeIcon = ({ type }: { type: Request["contentType"] }) => {
+  if (type === "video") {
     return <Video className="h-4 w-4 text-muted-foreground" />;
   }
   return <Image className="h-4 w-4 text-muted-foreground" />;
@@ -119,11 +127,15 @@ const MyRequestsPage = () => {
         const items = Array.isArray(payload?.data)
           ? (payload.data as ApiRequest[])
           : [];
-        const mappedRequests = items.map((item) => ({
-          ...item,
-          createdAt: new Date(item.createdAt),
-          deadline: item.deadline ? new Date(item.deadline) : undefined,
-        }));
+        const mappedRequests = items.map((item) => {
+          const { type, contentType, ...rest } = item;
+          return {
+            ...rest,
+            contentType: normalizeContentType(contentType ?? type),
+            createdAt: new Date(item.createdAt),
+            deadline: item.deadline ? new Date(item.deadline) : undefined,
+          };
+        });
 
         setRequests(mappedRequests);
         setMeta(payload?.meta ?? null);
@@ -272,8 +284,10 @@ const MyRequestsPage = () => {
                   </TableCell> */}
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <TypeIcon type={request.type} />
-                      <span className="text-foreground">{request.type}</span>
+                      <TypeIcon type={request.contentType} />
+                      <span className="text-foreground">
+                        {getContentTypeLabel(request.contentType)}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-foreground">
