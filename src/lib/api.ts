@@ -137,7 +137,7 @@ export interface CreateRequestPayload {
 }
 
 export const requestApi = {
-  createRequest: (data: CreateRequestPayload) => api.post('/create-request', data),
+  createRequest: (data: CreateRequestPayload) => api.post('/requests', data),
 };
 
 // Creator types
