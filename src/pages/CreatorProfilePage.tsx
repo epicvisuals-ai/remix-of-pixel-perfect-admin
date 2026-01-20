@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FavoriteButton } from "@/components/creators/FavoriteButton";
 import { ReviewCard } from "@/components/creators/ReviewCard";
 import { RequestQuoteModal } from "@/components/creators/RequestQuoteModal";
+import PortfolioPreviewModal, { PortfolioItem } from "@/components/creators/PortfolioPreviewModal";
 import { useMessaging } from "@/contexts/MessagingContext";
 import { creatorsApi } from "@/lib/api";
 
@@ -305,6 +306,8 @@ export default function CreatorProfilePage() {
   const { startConversation } = useMessaging();
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [portfolioPreviewOpen, setPortfolioPreviewOpen] = useState(false);
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
 
   const { data: creatorResponse, isLoading, error } = useQuery({
     queryKey: ['creator', creatorId],
@@ -471,6 +474,15 @@ export default function CreatorProfilePage() {
             <div
               key={item.id}
               className="group relative aspect-square overflow-hidden rounded-xl bg-muted cursor-pointer"
+              onClick={() => {
+                const portfolioItem: PortfolioItem = {
+                  id: item.id,
+                  title: item.title,
+                  imageUrl: item.image,
+                };
+                setSelectedPortfolioItem(portfolioItem);
+                setPortfolioPreviewOpen(true);
+              }}
             >
               <img
                 src={item.image}
@@ -538,6 +550,19 @@ export default function CreatorProfilePage() {
         onOpenChange={setQuoteModalOpen}
         creatorName={creator.name}
         creatorId={creator.id}
+      />
+
+      {/* Portfolio Preview Modal */}
+      <PortfolioPreviewModal
+        open={portfolioPreviewOpen}
+        onOpenChange={setPortfolioPreviewOpen}
+        currentItem={selectedPortfolioItem}
+        items={creator.portfolio.map(item => ({
+          id: item.id,
+          title: item.title,
+          imageUrl: item.image,
+        }))}
+        onNavigate={(item) => setSelectedPortfolioItem(item)}
       />
     </div>
   );
