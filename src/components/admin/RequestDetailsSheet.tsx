@@ -61,6 +61,7 @@ interface Creator {
 
 interface CreatorApiItem {
   id: string;
+  userId?: string | null;
   specialty?: string | null;
   avatar?: string | null;
   user?: {
@@ -252,7 +253,7 @@ export function RequestDetailsSheet({
           const firstName = creator.user?.firstName?.trim() ?? "";
           const lastName = creator.user?.lastName?.trim() ?? "";
           const name = `${firstName} ${lastName}`.trim() || "Unknown Creator";
-          const userId = creator.user?.id ?? creator.id;
+          const userId = creator.userId ?? creator.user?.id ?? creator.id;
           return {
             id: creator.id,
             userId,
