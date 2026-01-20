@@ -14,13 +14,30 @@ interface Request {
   brief: string;
   toneOfVoice?: string;
   deadline?: Date;
+  assignedCreator?: AssignedCreator;
 }
 
-interface ApiRequestDetail extends Omit<Request, "createdAt" | "deadline" | "contentType"> {
+interface AssignedCreator {
+  id: string;
+  userId: string;
+  name?: string;
+  avatar?: string | null;
+  specialty?: string | null;
+}
+
+interface ApiRequestDetail
+  extends Omit<Request, "createdAt" | "deadline" | "contentType" | "assignedCreator"> {
   contentType?: "image" | "video";
   type?: "Image" | "Video" | "image" | "video";
   createdAt?: string;
   deadline?: string | null;
+  assignedCreator?: {
+    id?: string | null;
+    userId?: string | null;
+    name?: string | null;
+    avatar?: string | null;
+    specialty?: string | null;
+  } | null;
 }
 
 const normalizeStatus = (value?: string): Request["status"] => {
@@ -44,6 +61,17 @@ const normalizeContentType = (value?: string): Request["contentType"] =>
   value?.toLowerCase() === "video" ? "video" : "image";
 
 const mapRequestDetail = (requestId: string, data?: ApiRequestDetail): Request => {
+  const assignedCreator = data?.assignedCreator;
+  const mappedAssignedCreator = assignedCreator
+    ? {
+        id: assignedCreator.id ?? assignedCreator.userId ?? "",
+        userId: assignedCreator.userId ?? assignedCreator.id ?? "",
+        name: assignedCreator.name ?? undefined,
+        avatar: assignedCreator.avatar ?? undefined,
+        specialty: assignedCreator.specialty ?? undefined,
+      }
+    : undefined;
+
   return {
     id: data?.id ?? requestId,
     contentType: normalizeContentType(data?.contentType ?? data?.type),
@@ -53,6 +81,7 @@ const mapRequestDetail = (requestId: string, data?: ApiRequestDetail): Request =
     status: normalizeStatus(data?.status),
     createdAt: data?.createdAt ? new Date(data.createdAt) : new Date(),
     budget: data?.budget ?? 0,
+    assignedCreator: mappedAssignedCreator,
   };
 };
 
