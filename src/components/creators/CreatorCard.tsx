@@ -8,13 +8,15 @@ interface CreatorCardProps {
   portfolioImage: string;
   specialty: string;
   rating?: number;
+  creator?: any;
+  onFavoriteChange?: (creatorId: string, wasFavorite: boolean, creatorData?: any) => void;
 }
 
-export function CreatorCard({ id, name, portfolioImage, specialty, rating }: CreatorCardProps) {
+export function CreatorCard({ id, name, portfolioImage, specialty, rating, creator, onFavoriteChange }: CreatorCardProps) {
   const navigate = useNavigate();
 
   return (
-    <div 
+    <div
       className="group cursor-pointer"
       onClick={() => navigate(`/creators/${id}`)}
     >
@@ -25,7 +27,7 @@ export function CreatorCard({ id, name, portfolioImage, specialty, rating }: Cre
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        <FavoriteButton creatorId={id} variant="overlay" className="opacity-0 group-hover:opacity-100 transition-opacity" />
+        <FavoriteButton creatorId={id} variant="overlay" className="opacity-0 group-hover:opacity-100 transition-opacity" creatorData={creator} onFavoriteChange={onFavoriteChange} />
       </div>
       <div className="mt-3 space-y-1">
         <h3 className="font-medium text-foreground">{name}</h3>

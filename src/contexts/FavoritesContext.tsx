@@ -5,7 +5,7 @@ import { toast } from "sonner";
 interface FavoritesContextType {
   favorites: string[];
   setFavorites: (favorites: string[]) => void;
-  toggleFavorite: (creatorId: string) => Promise<void>;
+  toggleFavorite: (creatorId: string, creatorData?: any, onSuccess?: (creatorId: string, wasFavorite: boolean, creatorData?: any) => void) => Promise<void>;
   isFavorite: (creatorId: string) => boolean;
   isToggling: string | null;
   refreshFavorites: () => Promise<void>;
@@ -32,9 +32,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const toggleFavorite = useCallback(async (creatorId: string) => {
+  const toggleFavorite = useCallback(async (creatorId: string, creatorData?: any, onSuccess?: (creatorId: string, wasFavorite: boolean, creatorData?: any) => void) => {
     if (isToggling) return;
-    
+
     setIsToggling(creatorId);
     const wasFavorite = favorites.includes(creatorId);
 
@@ -53,6 +53,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         await favoritesApi.add(creatorId);
         toast.success("Added to favorites");
       }
+
+      // Call success callback with creator data for UI updates
+      if (onSuccess) {
+        onSuccess(creatorId, wasFavorite, creatorData);
+      }
     } catch (error: any) {
       // Revert optimistic update
       setFavorites((prev) =>
@@ -60,7 +65,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
           ? [...prev, creatorId]
           : prev.filter((id) => id !== creatorId)
       );
-      
+
       const status = error.response?.status;
       if (status === 409) {
         toast.error("Creator already in favorites");

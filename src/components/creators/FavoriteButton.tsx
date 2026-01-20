@@ -7,16 +7,18 @@ interface FavoriteButtonProps {
   creatorId: string;
   variant?: "icon" | "overlay";
   className?: string;
+  creatorData?: any;
+  onFavoriteChange?: (creatorId: string, wasFavorite: boolean, creatorData?: any) => void;
 }
 
-export function FavoriteButton({ creatorId, variant = "icon", className }: FavoriteButtonProps) {
+export function FavoriteButton({ creatorId, variant = "icon", className, creatorData, onFavoriteChange }: FavoriteButtonProps) {
   const { toggleFavorite, isFavorite, isToggling } = useFavorites();
   const favorited = isFavorite(creatorId);
   const isLoading = isToggling === creatorId;
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await toggleFavorite(creatorId);
+    await toggleFavorite(creatorId, creatorData, onFavoriteChange);
   };
 
   if (variant === "overlay") {

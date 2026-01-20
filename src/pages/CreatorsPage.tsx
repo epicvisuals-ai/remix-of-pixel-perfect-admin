@@ -187,6 +187,27 @@ export default function CreatorsPage() {
     };
   }, [searchQuery, setFavorites]);
 
+  const handleFavoriteChange = (creatorId: string, wasFavorite: boolean, creatorData?: any) => {
+    if (!creatorData) return;
+
+    if (!wasFavorite) {
+      // Adding to favorite - add to savedCreators
+      const newSavedCreator: SavedCreator = {
+        id: creatorData.id,
+        creatorId: creatorData.userId,
+        name: `${creatorData.user.firstName} ${creatorData.user.lastName}`,
+        avatar: creatorData.avatar,
+        specialty: creatorData.specialty,
+        rating: creatorData.rating,
+        addedAt: new Date().toISOString(),
+      };
+      setSavedCreators((prev) => [newSavedCreator, ...prev]);
+    } else {
+      // Removing from favorite - remove from savedCreators
+      setSavedCreators((prev) => prev.filter((c) => c.creatorId !== creatorId));
+    }
+  };
+
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
@@ -285,11 +306,13 @@ export default function CreatorsPage() {
                       className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
                     >
                       <CreatorCard
-                        id={creator.id}
+                        id={creator.userId}
                         name={`${creator.user.firstName} ${creator.user.lastName}`}
                         portfolioImage={creator.portfolioImage || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop"}
                         specialty={creator.specialty}
                         rating={creator.rating}
+                        creator={creator}
+                        onFavoriteChange={handleFavoriteChange}
                       />
                     </CarouselItem>
                   ))}
