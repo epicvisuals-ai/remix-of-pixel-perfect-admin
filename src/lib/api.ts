@@ -181,3 +181,28 @@ export interface CreatorsAggregateResponse {
 export const creatorsApi = {
   getAggregate: () => api.get<CreatorsAggregateResponse>('/creators/aggregate'),
 };
+
+// Favorites types
+export interface AddFavoriteResponse {
+  success: boolean;
+  data: {
+    id: string;
+    creatorId: string;
+    addedAt: string;
+  };
+}
+
+export interface RemoveFavoriteResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}
+
+// Favorites API functions
+export const favoritesApi = {
+  add: (creatorId: string) => 
+    api.post<AddFavoriteResponse>('/favorites', { creator_id: creatorId }),
+  remove: (creatorId: string) => 
+    api.delete<RemoveFavoriteResponse>(`/favorites/${creatorId}`),
+};

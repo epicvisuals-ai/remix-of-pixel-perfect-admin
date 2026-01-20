@@ -1,28 +1,67 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { favoritesApi } from "@/lib/api";
+import { toast } from "sonner";
 
 interface FavoritesContextType {
   favorites: string[];
-  toggleFavorite: (creatorId: string) => void;
+  setFavorites: (favorites: string[]) => void;
+  toggleFavorite: (creatorId: string) => Promise<void>;
   isFavorite: (creatorId: string) => boolean;
+  isToggling: string | null;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [isToggling, setIsToggling] = useState<string | null>(null);
 
-  const toggleFavorite = (creatorId: string) => {
+  const toggleFavorite = useCallback(async (creatorId: string) => {
+    if (isToggling) return;
+    
+    setIsToggling(creatorId);
+    const wasFavorite = favorites.includes(creatorId);
+
+    // Optimistic update
     setFavorites((prev) =>
-      prev.includes(creatorId)
+      wasFavorite
         ? prev.filter((id) => id !== creatorId)
         : [...prev, creatorId]
     );
-  };
 
-  const isFavorite = (creatorId: string) => favorites.includes(creatorId);
+    try {
+      if (wasFavorite) {
+        await favoritesApi.remove(creatorId);
+        toast.success("Removed from favorites");
+      } else {
+        await favoritesApi.add(creatorId);
+        toast.success("Added to favorites");
+      }
+    } catch (error: any) {
+      // Revert optimistic update
+      setFavorites((prev) =>
+        wasFavorite
+          ? [...prev, creatorId]
+          : prev.filter((id) => id !== creatorId)
+      );
+      
+      const status = error.response?.status;
+      if (status === 409) {
+        toast.error("Creator already in favorites");
+      } else if (status === 404) {
+        toast.error("Favorite not found");
+      } else {
+        toast.error("Failed to update favorites");
+      }
+    } finally {
+      setIsToggling(null);
+    }
+  }, [favorites, isToggling]);
+
+  const isFavorite = useCallback((creatorId: string) => favorites.includes(creatorId), [favorites]);
 
   return (
-    <FavoritesContext.Provider value={{ favorites, toggleFavorite, isFavorite }}>
+    <FavoritesContext.Provider value={{ favorites, setFavorites, toggleFavorite, isFavorite, isToggling }}>
       {children}
     </FavoritesContext.Provider>
   );
