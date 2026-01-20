@@ -8,7 +8,7 @@ import { useFavorites } from "@/contexts/FavoritesContext";
 import { cn } from "@/lib/utils";
 
 interface FavoriteCreatorCardProps {
-  id: string;
+  userId: string;
   name: string;
   avatar: string;
   specialty: string;
@@ -16,7 +16,7 @@ interface FavoriteCreatorCardProps {
   onRemove?: () => void;
 }
 
-export function FavoriteCreatorCard({ id, name, avatar, specialty, rating, onRemove }: FavoriteCreatorCardProps) {
+export function FavoriteCreatorCard({ userId, name, avatar, specialty, rating, onRemove }: FavoriteCreatorCardProps) {
   const navigate = useNavigate();
   const { toggleFavorite, isToggling } = useFavorites();
   const [showHeart, setShowHeart] = useState(false);
@@ -29,14 +29,14 @@ export function FavoriteCreatorCard({ id, name, avatar, specialty, rating, onRem
 
   const handleRemoveFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await toggleFavorite(id);
+    await toggleFavorite(userId);
     onRemove?.();
   };
 
   return (
     <div
       className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/50 cursor-pointer"
-      onClick={() => navigate(`/creators/${id}`)}
+      onClick={() => navigate(`/creators/${userId}`)}
       onMouseEnter={() => setShowHeart(true)}
       onMouseLeave={() => setShowHeart(false)}
     >
@@ -50,11 +50,11 @@ export function FavoriteCreatorCard({ id, name, avatar, specialty, rating, onRem
         {showHeart && (
           <button
             onClick={handleRemoveFavorite}
-            disabled={isToggling === id}
+            disabled={isToggling === userId}
             className="absolute -bottom-1 -left-1 flex items-center justify-center rounded-full bg-red-500 p-1 hover:bg-red-600 transition-colors disabled:opacity-50"
             aria-label="Remove from favorites"
           >
-            <Heart className={cn("h-3 w-3 fill-white text-white", isToggling === id && "animate-pulse")} />
+            <Heart className={cn("h-3 w-3 fill-white text-white", isToggling === userId && "animate-pulse")} />
           </button>
         )}
       </div>
