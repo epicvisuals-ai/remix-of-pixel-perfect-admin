@@ -237,6 +237,7 @@ export function RequestDetailsSheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingRequest, setIsEditingRequest] = useState(false);
   const [isSavingRequest, setIsSavingRequest] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<Request["status"]>("Created");
   const [requestDetails, setRequestDetails] = useState<{
     brief: string;
     budget: number;
@@ -324,6 +325,7 @@ export function RequestDetailsSheet({
       budget: request.budget,
       deadline: request.deadline,
     });
+    setRequestStatus(request.status);
     setEditBrief(request.brief);
     setEditBudget(String(request.budget));
     setEditDeadline(formatDateInputValue(request.deadline));
@@ -355,6 +357,7 @@ export function RequestDetailsSheet({
     try {
       const response = await requestApi.submitRequest(request.id);
       if (response.status === 200) {
+        setRequestStatus("Submitted");
         toast({
           title: "Request submitted for review.",
         });
@@ -389,7 +392,7 @@ export function RequestDetailsSheet({
     if (!request?.id || isSavingRequest) return;
 
     const updates: { brief?: string; budget?: number; deadline?: string | null } = {};
-    const allowBriefBudgetEdits = isFullEditStatus(request.status);
+    const allowBriefBudgetEdits = isFullEditStatus(requestStatus);
     if (allowBriefBudgetEdits) {
       const trimmedBrief = editBrief.trim();
       if (trimmedBrief !== requestDetails.brief) {
@@ -525,11 +528,11 @@ export function RequestDetailsSheet({
   // Early return AFTER all hooks are declared
   if (!request) return null;
 
-  const normalizedStatus = normalizeRequestStatus(request.status);
-  const canEditAllFields = isFullEditStatus(request.status);
+  const normalizedStatus = normalizeRequestStatus(requestStatus);
+  const canEditAllFields = isFullEditStatus(requestStatus);
   const canEditDeadlineOnly = normalizedStatus === "in_progress";
-  const canEditAssignedCreator = request.status !== "Approved";
-  const currentStatusIndex = getStatusIndex(request.status);
+  const canEditAssignedCreator = requestStatus !== "Approved";
+  const currentStatusIndex = getStatusIndex(requestStatus);
 
   // Collect all image attachments for lightbox navigation
   const allImageAttachments = comments.flatMap(
@@ -746,9 +749,9 @@ export function RequestDetailsSheet({
             </div>
             <Badge
               variant="secondary"
-              className={getStatusBadgeVariant(request.status)}
+              className={getStatusBadgeVariant(requestStatus)}
             >
-              {request.status}
+              {requestStatus}
             </Badge>
           </div>
         </SheetHeader>
@@ -764,7 +767,7 @@ export function RequestDetailsSheet({
                 {statusTimeline.map((step, index) => {
                   const isCompleted = currentStatusIndex >= index;
                   const isCurrent = currentStatusIndex === index;
-                  const isRejected = request.status === "Rejected";
+                  const isRejected = requestStatus === "Rejected";
 
                   return (
                     <div key={step.status} className="flex flex-col items-center flex-1">
@@ -1250,13 +1253,13 @@ export function RequestDetailsSheet({
               </Button>
             ) : (
               <>
-                {isEditableRequestStatus(request.status) && (
+                {isEditableRequestStatus(requestStatus) && (
                   <Button variant="outline" className="flex-1" onClick={handleEditRequest}>
                     <Edit2 className="h-4 w-4 mr-2" />
                     Edit Request
                   </Button>
                 )}
-                {request.status === "Created" && (
+                {requestStatus === "Created" && (
                   <Button
                     className="flex-1"
                     onClick={handleSubmitForReview}
