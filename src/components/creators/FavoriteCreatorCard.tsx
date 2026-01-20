@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 interface FavoriteCreatorCardProps {
   userId: string;
+  creatorId: string;
   name: string;
   avatar: string;
   specialty: string;
@@ -16,7 +17,15 @@ interface FavoriteCreatorCardProps {
   onRemove?: () => void;
 }
 
-export function FavoriteCreatorCard({ userId, name, avatar, specialty, rating, onRemove }: FavoriteCreatorCardProps) {
+export function FavoriteCreatorCard({
+  userId,
+  creatorId,
+  name,
+  avatar,
+  specialty,
+  rating,
+  onRemove,
+}: FavoriteCreatorCardProps) {
   const navigate = useNavigate();
   const { toggleFavorite, isToggling } = useFavorites();
   const [showHeart, setShowHeart] = useState(false);
@@ -36,7 +45,7 @@ export function FavoriteCreatorCard({ userId, name, avatar, specialty, rating, o
   return (
     <div
       className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/50 cursor-pointer"
-      onClick={() => navigate(`/creators/${userId}`)}
+      onClick={() => navigate(`/creators/${creatorId}`)}
       onMouseEnter={() => setShowHeart(true)}
       onMouseLeave={() => setShowHeart(false)}
     >

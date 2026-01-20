@@ -196,7 +196,8 @@ export default function CreatorsPage() {
       // Adding to favorite - add to savedCreators
       const newSavedCreator: SavedCreator = {
         id: creatorData.id,
-        creatorId: creatorData.userId,
+        userId: creatorData.userId,
+        creatorId: creatorData.id,
         name: `${creatorData.user.firstName} ${creatorData.user.lastName}`,
         avatar: creatorData.avatar,
         specialty: creatorData.specialty,
@@ -256,6 +257,7 @@ export default function CreatorsPage() {
                   <FavoriteCreatorCard
                     key={creator.id}
                     userId={creator.userId}
+                    creatorId={creator.creatorId}
                     name={creator.name || "Unknown"}
                     avatar={creator.avatar || ""}
                     specialty={creator.specialty || "Creator"}
