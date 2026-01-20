@@ -208,6 +208,10 @@ export default function CreatorsPage() {
     }
   };
 
+  const handleSavedCreatorRemove = (creatorId: string) => {
+    setSavedCreators((prev) => prev.filter((c) => c.creatorId !== creatorId));
+  };
+
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
@@ -254,6 +258,7 @@ export default function CreatorsPage() {
                     avatar={creator.avatar || ""}
                     specialty={creator.specialty || "Creator"}
                     rating={creator.rating || 0}
+                    onRemove={() => handleSavedCreatorRemove(creator.creatorId)}
                   />
                 ))}
               </div>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,11 +13,13 @@ interface FavoriteCreatorCardProps {
   avatar: string;
   specialty: string;
   rating: number;
+  onRemove?: () => void;
 }
 
-export function FavoriteCreatorCard({ id, name, avatar, specialty, rating }: FavoriteCreatorCardProps) {
+export function FavoriteCreatorCard({ id, name, avatar, specialty, rating, onRemove }: FavoriteCreatorCardProps) {
   const navigate = useNavigate();
   const { toggleFavorite, isToggling } = useFavorites();
+  const [showHeart, setShowHeart] = useState(false);
 
   const initials = name
     .split(" ")
@@ -24,17 +27,37 @@ export function FavoriteCreatorCard({ id, name, avatar, specialty, rating }: Fav
     .join("")
     .toUpperCase();
 
+  const handleRemoveFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await toggleFavorite(id);
+    onRemove?.();
+  };
+
   return (
-    <div 
+    <div
       className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/50 cursor-pointer"
       onClick={() => navigate(`/creators/${id}`)}
+      onMouseEnter={() => setShowHeart(true)}
+      onMouseLeave={() => setShowHeart(false)}
     >
-      <Avatar className="h-12 w-12">
-        <AvatarImage src={avatar} alt={name} />
-        <AvatarFallback className="bg-primary/10 text-primary">
-          {initials}
-        </AvatarFallback>
-      </Avatar>
+      <div className="relative">
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={avatar} alt={name} />
+          <AvatarFallback className="bg-primary/10 text-primary">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        {showHeart && (
+          <button
+            onClick={handleRemoveFavorite}
+            disabled={isToggling === id}
+            className="absolute -bottom-1 -left-1 flex items-center justify-center rounded-full bg-red-500 p-1 hover:bg-red-600 transition-colors disabled:opacity-50"
+            aria-label="Remove from favorites"
+          >
+            <Heart className={cn("h-3 w-3 fill-white text-white", isToggling === id && "animate-pulse")} />
+          </button>
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         <h4 className="font-medium text-foreground truncate">{name}</h4>
         <div className="flex items-center gap-2">
@@ -42,18 +65,6 @@ export function FavoriteCreatorCard({ id, name, avatar, specialty, rating }: Fav
           <span className="text-xs text-muted-foreground">★ {rating.toFixed(1)}</span>
         </div>
       </div>
-      <Button 
-        variant="ghost" 
-        size="icon"
-        className="shrink-0"
-        disabled={isToggling === id}
-        onClick={async (e) => {
-          e.stopPropagation();
-          await toggleFavorite(id);
-        }}
-      >
-        <Heart className={cn("h-4 w-4 fill-red-500 text-red-500", isToggling === id && "animate-pulse")} />
-      </Button>
     </div>
   );
 }
