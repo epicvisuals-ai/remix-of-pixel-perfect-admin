@@ -282,6 +282,7 @@ function CreatorProfileSkeleton() {
 // Default creator for unknown IDs
 const defaultCreator = {
   id: "default",
+  userId: "default",
   name: "Creator Profile",
   avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop",
   coverImage: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=1200&h=400&fit=crop",
@@ -326,6 +327,7 @@ export default function CreatorProfilePage() {
   const creatorData = creatorResponse?.data.data;
   const creator = creatorData ? {
     id: creatorData.id,
+    userId: creatorData.userId,
     name: `${creatorData.user.firstName} ${creatorData.user.lastName}`,
     avatar: creatorData.avatar,
     coverImage: creatorData.coverImage,
@@ -420,7 +422,7 @@ export default function CreatorProfilePage() {
         </div>
 
         <div className="flex gap-3 pt-2 md:pt-0">
-          <FavoriteButton creatorId={creator.id} />
+          <FavoriteButton creatorId={creator.userId} />
           <Button 
             variant="outline" 
             size="sm" 
