@@ -193,14 +193,14 @@ const getStatusBadgeVariant = (status: Request["status"]) => {
 const statusTimeline: { status: Request["status"]; label: string }[] = [
   { status: "Created", label: "Created" },
   { status: "Submitted", label: "Submitted" },
-  { status: "In Review", label: "In Review" },
   { status: "In Progress", label: "In Progress" },
   { status: "Approved", label: "Approved" },
 ];
 
 const getStatusIndex = (status: Request["status"]) => {
   if (status === "Rejected") return -1;
-  return statusTimeline.findIndex((s) => s.status === status);
+  const normalizedStatus = status === "In Review" ? "In Progress" : status;
+  return statusTimeline.findIndex((s) => s.status === normalizedStatus);
 };
 
 const formatFileSize = (bytes: number): string => {
@@ -577,6 +577,7 @@ export function RequestDetailsSheet({
   const canEditDeadlineOnly = normalizedStatus === "in_progress";
   const canEditAssignedCreator = requestStatus !== "Approved";
   const currentStatusIndex = getStatusIndex(requestStatus);
+  const displayStatus = requestStatus === "In Review" ? "In Progress" : requestStatus;
 
   // Collect all image attachments for lightbox navigation
   const allImageAttachments = comments.flatMap(
@@ -793,9 +794,9 @@ export function RequestDetailsSheet({
             </div>
             <Badge
               variant="secondary"
-              className={getStatusBadgeVariant(requestStatus)}
+              className={getStatusBadgeVariant(displayStatus)}
             >
-              {requestStatus}
+              {displayStatus}
             </Badge>
           </div>
         </SheetHeader>
