@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Image, Video, Plus, Search, ArrowUpDown, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { RequestDetailsSheet } from "@/components/admin/RequestDetailsSheet";
-import { API_BASE_URL } from "@/lib/api";
+import api from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -87,11 +87,11 @@ const MyRequestsPage = () => {
   useEffect(() => {
     let isActive = true;
     const controller = new AbortController();
-    const params = new URLSearchParams();
+    const params: Record<string, string> = {};
     setIsLoading(true);
 
     if (statusFilter !== "all") {
-      params.set("status", statusFilter.toLowerCase());
+      params.status = statusFilter.toLowerCase();
     }
 
     const sortMap: Record<SortOption, { sortBy: string; sortOrder: string }> = {
@@ -102,27 +102,20 @@ const MyRequestsPage = () => {
     };
 
     const { sortBy, sortOrder } = sortMap[sortOption];
-    params.set("sortBy", sortBy);
-    params.set("sortOrder", sortOrder);
+    params.sortBy = sortBy;
+    params.sortOrder = sortOrder;
 
     if (searchQuery.trim()) {
-      params.set("search", searchQuery.trim());
+      params.search = searchQuery.trim();
     }
-
-    const queryString = params.toString();
-    const url = queryString
-      ? `${API_BASE_URL}/requests?${queryString}`
-      : `${API_BASE_URL}/requests`;
 
     const fetchRequests = async () => {
       try {
-        const response = await fetch(url, { signal: controller.signal });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch requests");
-        }
-
-        const payload = await response.json();
+        const response = await api.get("/requests", {
+          params,
+          signal: controller.signal,
+        });
+        const payload = response.data;
         const items = Array.isArray(payload?.data)
           ? (payload.data as ApiRequest[])
           : [];
