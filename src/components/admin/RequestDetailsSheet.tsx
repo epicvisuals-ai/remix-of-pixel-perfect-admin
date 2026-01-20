@@ -288,6 +288,20 @@ export function RequestDetailsSheet({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open || selectedCreatorId) return;
+    const assignedCreatorId = request?.assignedCreator?.id;
+    if (!assignedCreatorId || availableCreators.length === 0) return;
+
+    const matchedCreator = availableCreators.find(
+      (creator) => creator.userId === assignedCreatorId
+    );
+
+    if (matchedCreator) {
+      setSelectedCreatorId(matchedCreator.id);
+    }
+  }, [availableCreators, open, request, selectedCreatorId]);
+
   const handleSubmitForReview = useCallback(async () => {
     if (!request?.id || isSubmitting) return;
     setIsSubmitting(true);
