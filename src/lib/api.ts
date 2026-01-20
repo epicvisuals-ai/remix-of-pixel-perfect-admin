@@ -127,3 +127,57 @@ export const teamApi = {
   inviteTeamMember: (data: InviteTeamMemberRequest) =>
     api.post<InviteTeamMemberResponse>('/team_members/invite', data),
 };
+
+// Creator types
+export interface SavedCreator {
+  id: string;
+  creatorId: string;
+  avatar: string | null;
+  name: string | null;
+  specialty: string | null;
+  rating: number | null;
+  addedAt: string;
+}
+
+export interface WorkedWithCreator {
+  id: string;
+  creatorId: string;
+  avatar: string | null;
+  name: string | null;
+  specialty: string | null;
+  projectCount: number;
+}
+
+export interface ExploreCreator {
+  id: string;
+  userId: string;
+  user: {
+    firstName: string;
+    lastName: string;
+  };
+  specialty: string;
+  rating: number;
+  isAvailable: boolean;
+  avatar: string | null;
+  portfolioImage: string | null;
+  isFavorite: boolean | null;
+}
+
+export interface CreatorsAggregateResponse {
+  success: boolean;
+  data: {
+    saved: SavedCreator[];
+    workedWith: WorkedWithCreator[];
+    explore: ExploreCreator[];
+    counts: {
+      saved: number;
+      workedWith: number;
+      explore: number;
+    };
+  };
+}
+
+// Creators API functions
+export const creatorsApi = {
+  getAggregate: () => api.get<CreatorsAggregateResponse>('/creators/aggregate'),
+};
