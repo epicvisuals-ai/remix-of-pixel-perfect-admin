@@ -6,6 +6,7 @@ import { CreatorSearch } from "@/components/creators/CreatorSearch";
 import { FavoriteCreatorCard } from "@/components/creators/FavoriteCreatorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { creatorsApi, SavedCreator, WorkedWithCreator, ExploreCreator } from "@/lib/api";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import {
   Carousel,
   CarouselContent,
@@ -112,6 +113,7 @@ export default function CreatorsPage() {
   const [savedCreators, setSavedCreators] = useState<SavedCreator[]>([]);
   const [workedWithCreators, setWorkedWithCreators] = useState<WorkedWithCreator[]>([]);
   const [exploreCreators, setExploreCreators] = useState<ExploreCreator[]>([]);
+  const { setFavorites } = useFavorites();
 
   useEffect(() => {
     const fetchCreators = async () => {
@@ -121,6 +123,8 @@ export default function CreatorsPage() {
         setSavedCreators(data.saved);
         setWorkedWithCreators(data.workedWith);
         setExploreCreators(data.explore);
+        // Sync favorites with saved creators
+        setFavorites(data.saved.map((c) => c.creatorId));
       } catch (error) {
         console.error("Failed to fetch creators:", error);
       } finally {
@@ -129,7 +133,7 @@ export default function CreatorsPage() {
     };
 
     fetchCreators();
-  }, []);
+  }, [setFavorites]);
 
   const filteredExploreCreators = exploreCreators.filter(
     (creator) => {
