@@ -53,6 +53,7 @@ import api from "@/lib/api";
 
 interface Creator {
   id: string;
+  userId: string;
   name: string;
   avatar?: string;
   specialty: string;
@@ -63,6 +64,7 @@ interface CreatorApiItem {
   specialty?: string | null;
   avatar?: string | null;
   user?: {
+    id?: string | null;
     firstName?: string | null;
     lastName?: string | null;
   } | null;
@@ -202,6 +204,8 @@ export function RequestDetailsSheet({
   const [availableCreators, setAvailableCreators] = useState<Creator[]>([]);
   const [creatorsLoading, setCreatorsLoading] = useState(false);
   const [creatorsError, setCreatorsError] = useState<string | null>(null);
+  const [assigningCreator, setAssigningCreator] = useState(false);
+  const [assignCreatorError, setAssignCreatorError] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [newComment, setNewComment] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -248,8 +252,10 @@ export function RequestDetailsSheet({
           const firstName = creator.user?.firstName?.trim() ?? "";
           const lastName = creator.user?.lastName?.trim() ?? "";
           const name = `${firstName} ${lastName}`.trim() || "Unknown Creator";
+          const userId = creator.user?.id ?? creator.id;
           return {
             id: creator.id,
+            userId,
             name,
             specialty: creator.specialty ?? "Unknown specialty",
             avatar: creator.avatar ?? undefined,
@@ -353,11 +359,27 @@ export function RequestDetailsSheet({
     (comment) => comment.attachments?.filter((a) => a.type === "image") || []
   );
 
-  const handleAssignCreator = () => {
+  const handleAssignCreator = async () => {
     const creator = availableCreators.find((c) => c.id === selectedCreatorId);
-    if (creator) {
-      setAssignedCreator(creator);
+    if (!creator || !request) return;
+    setAssigningCreator(true);
+    setAssignCreatorError(null);
+    try {
+      const response = await api.patch(`/requests/${request.id}`, {
+        assigned_creator_id: creator.userId,
+      });
+      const assignedCreatorId = response.data?.data?.assignedCreatorId;
+      const nextCreator =
+        availableCreators.find(
+          (item) => item.id === assignedCreatorId || item.userId === assignedCreatorId
+        ) ?? creator;
+      setAssignedCreator(nextCreator);
       setSelectedCreatorId("");
+    } catch (error) {
+      console.error("Failed to assign creator:", error);
+      setAssignCreatorError("Unable to assign creator. Please try again.");
+    } finally {
+      setAssigningCreator(false);
     }
   };
 
@@ -642,69 +664,76 @@ export function RequestDetailsSheet({
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <Select
-                  value={selectedCreatorId}
-                  onValueChange={setSelectedCreatorId}
-                  disabled={creatorsLoading || !!creatorsError}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue
-                      placeholder={
-                        creatorsLoading
-                          ? "Loading creators..."
-                          : creatorsError
-                          ? "Unable to load creators"
-                          : "Select a creator..."
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {creatorsLoading ? (
-                      <div className="px-2 py-2 space-y-2">
-                        <Skeleton className="h-6 w-full" />
-                        <Skeleton className="h-6 w-full" />
-                        <Skeleton className="h-6 w-full" />
-                      </div>
-                    ) : creatorsError ? (
-                      <div className="px-2 py-2 text-sm text-muted-foreground">
-                        {creatorsError}
-                      </div>
-                    ) : availableCreators.length === 0 ? (
-                      <div className="px-2 py-2 text-sm text-muted-foreground">
-                        No creators available
-                      </div>
-                    ) : (
-                      availableCreators.map((creator) => (
-                        <SelectItem key={creator.id} value={creator.id}>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              {creator.avatar ? (
-                                <AvatarImage src={creator.avatar} alt={creator.name} />
-                              ) : null}
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                {creator.name.split(" ").map((n) => n[0]).join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span>{creator.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {creator.specialty}
-                              </span>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedCreatorId}
+                    onValueChange={setSelectedCreatorId}
+                    disabled={creatorsLoading || !!creatorsError || assigningCreator}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue
+                        placeholder={
+                          creatorsLoading
+                            ? "Loading creators..."
+                            : creatorsError
+                            ? "Unable to load creators"
+                            : "Select a creator..."
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {creatorsLoading ? (
+                        <div className="px-2 py-2 space-y-2">
+                          <Skeleton className="h-6 w-full" />
+                          <Skeleton className="h-6 w-full" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ) : creatorsError ? (
+                        <div className="px-2 py-2 text-sm text-muted-foreground">
+                          {creatorsError}
+                        </div>
+                      ) : availableCreators.length === 0 ? (
+                        <div className="px-2 py-2 text-sm text-muted-foreground">
+                          No creators available
+                        </div>
+                      ) : (
+                        availableCreators.map((creator) => (
+                          <SelectItem key={creator.id} value={creator.id}>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                {creator.avatar ? (
+                                  <AvatarImage src={creator.avatar} alt={creator.name} />
+                                ) : null}
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                  {creator.name.split(" ").map((n) => n[0]).join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col">
+                                <span>{creator.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {creator.specialty}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={handleAssignCreator}
-                  disabled={!selectedCreatorId || creatorsLoading || !!creatorsError}
-                  size="icon"
-                >
-                  <UserPlus className="h-4 w-4" />
-                </Button>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handleAssignCreator}
+                    disabled={
+                      !selectedCreatorId || creatorsLoading || !!creatorsError || assigningCreator
+                    }
+                    size="icon"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {assignCreatorError ? (
+                  <p className="text-xs text-destructive">{assignCreatorError}</p>
+                ) : null}
               </div>
             )}
           </div>
