@@ -106,7 +106,7 @@ interface Request {
   id: string;
   contentType: "image" | "video";
   budget: number;
-  status: "Created" | "Submitted" | "In Progress" | "Approved" | "Rejected";
+  status: "Created" | "Submitted" | "In Review" | "In Progress" | "Approved" | "Rejected";
   createdAt: Date;
   brief: string;
   toneOfVoice?: string;
@@ -177,6 +177,8 @@ const getStatusBadgeVariant = (status: Request["status"]) => {
       return "bg-gray-100 text-gray-700 hover:bg-gray-100";
     case "Submitted":
       return "bg-blue-100 text-blue-700 hover:bg-blue-100";
+    case "In Review":
+      return "bg-amber-100 text-amber-700 hover:bg-amber-100";
     case "In Progress":
       return "bg-amber-100 text-amber-700 hover:bg-amber-100";
     case "Approved":
@@ -191,6 +193,7 @@ const getStatusBadgeVariant = (status: Request["status"]) => {
 const statusTimeline: { status: Request["status"]; label: string }[] = [
   { status: "Created", label: "Created" },
   { status: "Submitted", label: "Submitted" },
+  { status: "In Review", label: "In Review" },
   { status: "In Progress", label: "In Progress" },
   { status: "Approved", label: "Approved" },
 ];
