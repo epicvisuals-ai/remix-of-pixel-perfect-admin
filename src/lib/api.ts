@@ -132,6 +132,7 @@ export const teamApi = {
 export interface SavedCreator {
   id: string;
   userId: string;
+  creatorId: string;
   avatar: string | null;
   name: string | null;
   specialty: string | null;
