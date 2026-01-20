@@ -49,7 +49,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import api from "@/lib/api";
+import api, { requestApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Creator {
   id: string;
@@ -214,6 +215,7 @@ export function RequestDetailsSheet({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<Attachment[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Zoom and pan state for lightbox
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -229,6 +231,7 @@ export function RequestDetailsSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const { toast } = useToast();
 
   // Reset zoom/pan when changing images or closing lightbox
   useEffect(() => {
@@ -284,6 +287,35 @@ export function RequestDetailsSheet({
       isActive = false;
     };
   }, [open]);
+
+  const handleSubmitForReview = useCallback(async () => {
+    if (!request?.id || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const response = await requestApi.submitRequest(request.id);
+      if (response.status === 200) {
+        toast({
+          title: "Request submitted for review.",
+        });
+      }
+    } catch (error) {
+      const response = (error as { response?: { status?: number; data?: { detail?: string } } })
+        .response;
+      if (response?.status === 400) {
+        toast({
+          title: response.data?.detail ?? "Unable to submit request.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Unable to submit request.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [isSubmitting, request?.id, toast]);
 
   // Simulate creator typing indicator (mock - would be real-time in production)
   useEffect(() => {
@@ -1032,7 +1064,13 @@ export function RequestDetailsSheet({
               Edit Request
             </Button>
             {request.status === "Created" && (
-              <Button className="flex-1">Submit for Review</Button>
+              <Button
+                className="flex-1"
+                onClick={handleSubmitForReview}
+                disabled={isSubmitting}
+              >
+                Submit for Review
+              </Button>
             )}
           </div>
         </div>
