@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { CreatorCard } from "@/components/creators/CreatorCard";
 import { WorkedWithCard } from "@/components/creators/WorkedWithCard";
 import { CreatorSearch } from "@/components/creators/CreatorSearch";
 import { FavoriteCreatorCard } from "@/components/creators/FavoriteCreatorCard";
-import { useFavorites } from "@/contexts/FavoritesContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { creatorsApi, SavedCreator, WorkedWithCreator, ExploreCreator } from "@/lib/api";
 import {
   Carousel,
   CarouselContent,
@@ -13,82 +14,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-// Mock data - in real app, this would come from API
-const workedWithCreators = [
-  {
-    id: "1",
-    name: "Sarah Chen",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
-    collaborationCount: 5,
-    specialty: "Photography",
-  },
-  {
-    id: "2",
-    name: "Marcus Johnson",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop",
-    collaborationCount: 3,
-    specialty: "Video",
-  },
-  {
-    id: "3",
-    name: "Emily Rodriguez",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop",
-    collaborationCount: 2,
-    specialty: "Design",
-  },
-];
-
-const allCreators = [
-  {
-    id: "4",
-    name: "Alex Kim",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop",
-    portfolioImage: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop",
-    specialty: "3D Art",
-    rating: 4.9,
-  },
-  {
-    id: "5",
-    name: "Jordan Lee",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop",
-    portfolioImage: "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=400&h=500&fit=crop",
-    specialty: "Photography",
-    rating: 4.8,
-  },
-  {
-    id: "6",
-    name: "Taylor Swift",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
-    portfolioImage: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&h=500&fit=crop",
-    specialty: "Illustration",
-    rating: 5.0,
-  },
-  {
-    id: "7",
-    name: "Morgan Davis",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop",
-    portfolioImage: "https://images.unsplash.com/photo-1561998338-13ad7883b20f?w=400&h=500&fit=crop",
-    specialty: "Video",
-    rating: 4.7,
-  },
-  {
-    id: "8",
-    name: "Casey Brown",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop",
-    portfolioImage: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=400&h=500&fit=crop",
-    specialty: "Motion",
-    rating: 4.6,
-  },
-  {
-    id: "9",
-    name: "Riley Wilson",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop",
-    portfolioImage: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=500&fit=crop",
-    specialty: "Photography",
-    rating: 4.8,
-  },
-];
-
+// Mock data - Discover styles section
 const discoverStyles = [
   {
     id: "1",
@@ -116,18 +42,101 @@ const discoverStyles = [
   },
 ];
 
+function SavedCreatorsSkeleton() {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Heart className="h-5 w-5 fill-red-500 text-red-500" />
+        <h2 className="text-lg font-medium text-foreground">Saved Creators</h2>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WorkedWithSkeleton() {
+  return (
+    <section className="space-y-4">
+      <Skeleton className="h-6 w-48" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+            <Skeleton className="h-8 w-14" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ExploreSkeleton() {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+      <div className="flex gap-4 overflow-hidden">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex-shrink-0 w-[180px]">
+            <Skeleton className="aspect-[4/5] rounded-2xl" />
+            <div className="mt-3 space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function CreatorsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { favorites } = useFavorites();
+  const [isLoading, setIsLoading] = useState(true);
+  const [savedCreators, setSavedCreators] = useState<SavedCreator[]>([]);
+  const [workedWithCreators, setWorkedWithCreators] = useState<WorkedWithCreator[]>([]);
+  const [exploreCreators, setExploreCreators] = useState<ExploreCreator[]>([]);
 
-  const filteredCreators = allCreators.filter(
-    (creator) =>
-      creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      creator.specialty.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    const fetchCreators = async () => {
+      try {
+        const response = await creatorsApi.getAggregate();
+        const data = response.data.data;
+        setSavedCreators(data.saved);
+        setWorkedWithCreators(data.workedWith);
+        setExploreCreators(data.explore);
+      } catch (error) {
+        console.error("Failed to fetch creators:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const favoriteCreators = allCreators.filter((creator) =>
-    favorites.includes(creator.id)
+    fetchCreators();
+  }, []);
+
+  const filteredExploreCreators = exploreCreators.filter(
+    (creator) => {
+      const name = `${creator.user.firstName} ${creator.user.lastName}`.toLowerCase();
+      return name.includes(searchQuery.toLowerCase()) ||
+        creator.specialty.toLowerCase().includes(searchQuery.toLowerCase());
+    }
   );
 
   return (
@@ -149,89 +158,104 @@ export default function CreatorsPage() {
         />
       </div>
 
-      {/* Favorites Section */}
-      {favoriteCreators.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 fill-red-500 text-red-500" />
-            <h2 className="text-lg font-medium text-foreground">
-              Saved Creators
-            </h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {favoriteCreators.map((creator) => (
-              <FavoriteCreatorCard
-                key={creator.id}
-                id={creator.id}
-                name={creator.name}
-                avatar={creator.avatar}
-                specialty={creator.specialty}
-                rating={creator.rating}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Loading State */}
+      {isLoading ? (
+        <>
+          <SavedCreatorsSkeleton />
+          <WorkedWithSkeleton />
+          <ExploreSkeleton />
+        </>
+      ) : (
+        <>
+          {/* Saved Creators Section */}
+          {savedCreators.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Heart className="h-5 w-5 fill-red-500 text-red-500" />
+                <h2 className="text-lg font-medium text-foreground">
+                  Saved Creators
+                </h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {savedCreators.map((creator) => (
+                  <FavoriteCreatorCard
+                    key={creator.id}
+                    id={creator.creatorId}
+                    name={creator.name || "Unknown"}
+                    avatar={creator.avatar || ""}
+                    specialty={creator.specialty || "Creator"}
+                    rating={creator.rating || 0}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* Worked With Section */}
-      {workedWithCreators.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium text-foreground">
-            Creators you've worked with
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {workedWithCreators.map((creator) => (
-              <WorkedWithCard
-                key={creator.id}
-                name={creator.name}
-                avatar={creator.avatar}
-                collaborationCount={creator.collaborationCount}
-                specialty={creator.specialty}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+          {/* Worked With Section */}
+          {workedWithCreators.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-medium text-foreground">
+                Creators you've worked with
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {workedWithCreators.map((creator) => (
+                  <WorkedWithCard
+                    key={creator.id}
+                    name={creator.name || "Unknown"}
+                    avatar={creator.avatar || ""}
+                    collaborationCount={creator.projectCount || 0}
+                    specialty={creator.specialty || "Creator"}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* Explore All Creators */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium text-foreground">
-            Explore all creators
-          </h2>
-          <span className="text-sm text-muted-foreground">
-            {filteredCreators.length} creator{filteredCreators.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-        <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          className="w-full"
-        >
-          <CarouselContent className="-ml-4">
-            {filteredCreators.map((creator) => (
-              <CarouselItem
-                key={creator.id}
-                className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
+          {/* Explore All Creators */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium text-foreground">
+                Explore all creators
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {filteredExploreCreators.length} creator{filteredExploreCreators.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {filteredExploreCreators.length > 0 ? (
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                className="w-full"
               >
-                <CreatorCard
-                  id={creator.id}
-                  name={creator.name}
-                  portfolioImage={creator.portfolioImage}
-                  specialty={creator.specialty}
-                  rating={creator.rating}
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="-left-4 hidden sm:flex" />
-          <CarouselNext className="-right-4 hidden sm:flex" />
-        </Carousel>
-      </section>
+                <CarouselContent className="-ml-4">
+                  {filteredExploreCreators.map((creator) => (
+                    <CarouselItem
+                      key={creator.id}
+                      className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
+                    >
+                      <CreatorCard
+                        id={creator.id}
+                        name={`${creator.user.firstName} ${creator.user.lastName}`}
+                        portfolioImage={creator.portfolioImage || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop"}
+                        specialty={creator.specialty}
+                        rating={creator.rating}
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="-left-4 hidden sm:flex" />
+                <CarouselNext className="-right-4 hidden sm:flex" />
+              </Carousel>
+            ) : (
+              <p className="text-muted-foreground">No creators found matching your search.</p>
+            )}
+          </section>
+        </>
+      )}
 
-      {/* Discover Styles */}
+      {/* Discover Styles - Always shown, mocked */}
       <section className="space-y-4">
         <h2 className="text-lg font-medium text-foreground">
           Discover something new
