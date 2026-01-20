@@ -315,7 +315,7 @@ export default function CreatorsPage() {
                       className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
                     >
                       <CreatorCard
-                        id={creator.userId}
+                        id={creator.id}
                         name={`${creator.user.firstName} ${creator.user.lastName}`}
                         portfolioImage={creator.portfolioImage || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop"}
                         specialty={creator.specialty}
