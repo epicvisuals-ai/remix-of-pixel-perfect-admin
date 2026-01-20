@@ -218,7 +218,7 @@ export interface CreatorDetailResponse {
 // Creators API functions
 export const creatorsApi = {
   getAggregate: (q?: string) => api.get<CreatorsAggregateResponse>('/creators/aggregate', { params: q ? { q } : {} }),
-  getById: (creatorId: string) => api.get<CreatorDetailResponse>(`/creators/${creatorId}`),
+  getById: (creatorId: string) => api.get<CreatorDetailResponse>(`/creators/${creatorId}/profile`),
 };
 
 // Favorites types
