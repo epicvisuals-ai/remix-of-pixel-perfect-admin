@@ -208,6 +208,7 @@ export interface CreatorDetailResponse {
     isAvailable: boolean;
     avatar: string | null;
     coverImage: string | null;
+    isFavorite: boolean;
     skills: string[];
     portfolio: CreatorPortfolioItem[];
     recentReviews: any[];
