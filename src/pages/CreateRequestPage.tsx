@@ -21,6 +21,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { requestApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type ContentType = "image" | "video";
@@ -44,7 +45,7 @@ const CreateRequestPage = () => {
   const [budget, setBudget] = useState("");
   const [deadline, setDeadline] = useState<Date>();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!brief.trim()) {
@@ -65,13 +66,47 @@ const CreateRequestPage = () => {
       return;
     }
 
-    // In a real app, this would save to the database
-    toast({
-      title: "Request submitted",
-      description: "Your request has been created successfully.",
-    });
-    
-    navigate("/my-requests");
+    const budgetValue = Number(budget);
+    if (Number.isNaN(budgetValue)) {
+      toast({
+        title: "Invalid budget",
+        description: "Please enter a valid budget.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const payload = {
+      contentType,
+      brief: brief.trim(),
+      toneOfVoice: tone,
+      budget: budgetValue,
+      deadline: deadline ? format(deadline, "yyyy-MM-dd") : null,
+    };
+
+    try {
+      const response = await requestApi.createRequest(payload);
+      if (response.status === 201) {
+        toast({
+          title: "Request submitted",
+          description: "Your request has been created successfully.",
+        });
+        navigate("/my-requests");
+        return;
+      }
+
+      toast({
+        title: "Unable to submit request",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } catch (error) {
+      toast({
+        title: "Unable to submit request",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

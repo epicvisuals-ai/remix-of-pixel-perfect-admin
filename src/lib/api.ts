@@ -128,6 +128,18 @@ export const teamApi = {
     api.post<InviteTeamMemberResponse>('/team_members/invite', data),
 };
 
+export interface CreateRequestPayload {
+  contentType: 'image' | 'video';
+  brief: string;
+  toneOfVoice: string;
+  budget: number;
+  deadline: string | null;
+}
+
+export const requestApi = {
+  createRequest: (data: CreateRequestPayload) => api.post('/create-request', data),
+};
+
 // Creator types
 export interface SavedCreator {
   id: string;
