@@ -313,6 +313,14 @@ export default function CreatorProfilePage() {
     queryKey: ['creator', creatorId],
     queryFn: () => creatorsApi.getById(creatorId!),
     enabled: !!creatorId,
+    refetchOnWindowFocus: false,
+    retry: (failureCount, queryError: any) => {
+      const status = queryError?.response?.status;
+      if (status === 404) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 
   const creatorData = creatorResponse?.data.data;

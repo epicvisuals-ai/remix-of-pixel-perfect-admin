@@ -117,6 +117,7 @@ export default function CreatorsPage() {
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const initialLoadDone = useRef(false);
+  const hasSearched = useRef(false);
 
   // Initial load - fetch all creators
   useEffect(() => {
@@ -133,11 +134,11 @@ export default function CreatorsPage() {
         console.error("Failed to fetch creators:", error);
       } finally {
         setIsLoading(false);
+        initialLoadDone.current = true;
       }
     };
 
     fetchCreators();
-    initialLoadDone.current = true;
   }, []);
 
   // Handle search with debouncing - call API when query has 3+ characters
@@ -161,10 +162,11 @@ export default function CreatorsPage() {
           setExploreCreators(data.explore);
           // Sync favorites with saved creators
           setFavorites(data.saved.map((c) => c.userId));
+          hasSearched.current = true;
         } catch (error) {
           console.error("Failed to fetch creators with search query:", error);
         }
-      } else if (searchQuery.length === 0 && initialLoadDone.current) {
+      } else if (searchQuery.length === 0 && initialLoadDone.current && hasSearched.current) {
         // If search is cleared (after initial load), fetch all creators again
         try {
           const response = await creatorsApi.getAggregate();
