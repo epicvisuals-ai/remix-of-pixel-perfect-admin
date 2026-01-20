@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { cn } from "@/lib/utils";
 
 interface FavoriteCreatorCardProps {
   id: string;
@@ -15,7 +16,7 @@ interface FavoriteCreatorCardProps {
 
 export function FavoriteCreatorCard({ id, name, avatar, specialty, rating }: FavoriteCreatorCardProps) {
   const navigate = useNavigate();
-  const { toggleFavorite } = useFavorites();
+  const { toggleFavorite, isToggling } = useFavorites();
 
   const initials = name
     .split(" ")
@@ -45,12 +46,13 @@ export function FavoriteCreatorCard({ id, name, avatar, specialty, rating }: Fav
         variant="ghost" 
         size="icon"
         className="shrink-0"
-        onClick={(e) => {
+        disabled={isToggling === id}
+        onClick={async (e) => {
           e.stopPropagation();
-          toggleFavorite(id);
+          await toggleFavorite(id);
         }}
       >
-        <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+        <Heart className={cn("h-4 w-4 fill-red-500 text-red-500", isToggling === id && "animate-pulse")} />
       </Button>
     </div>
   );
