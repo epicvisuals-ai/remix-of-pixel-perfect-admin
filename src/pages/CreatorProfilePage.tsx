@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, MapPin, Calendar, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { FavoriteButton } from "@/components/creators/FavoriteButton";
 import { ReviewCard } from "@/components/creators/ReviewCard";
 import { RequestQuoteModal } from "@/components/creators/RequestQuoteModal";
 import { useMessaging } from "@/contexts/MessagingContext";
+import { creatorsApi } from "@/lib/api";
 
 // Mock reviews data
 const reviewsData: Record<string, Array<{
@@ -21,6 +23,18 @@ const reviewsData: Record<string, Array<{
   content: string;
   projectType: string;
 }>> = {
+  "default": [
+    {
+      id: "1",
+      reviewerName: "Sarah Mitchell",
+      reviewerAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+      reviewerCompany: "TechStart Inc.",
+      rating: 5,
+      date: "Dec 2025",
+      content: "Exceptional work! Delivered exactly what we needed with great attention to detail.",
+      projectType: "Project",
+    },
+  ],
   "4": [
     {
       id: "1",
@@ -172,16 +186,47 @@ const defaultCreator = {
 };
 
 export default function CreatorProfilePage() {
-  const { id } = useParams<{ id: string }>();
+  const { creatorId } = useParams<{ creatorId: string }>();
   const navigate = useNavigate();
   const { startConversation } = useMessaging();
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
-  
-  const creator = id && creatorsData[id] ? creatorsData[id] : defaultCreator;
-  const reviews = id && reviewsData[id] ? reviewsData[id] : defaultReviews;
+
+  const { data: creatorResponse, isLoading, error } = useQuery({
+    queryKey: ['creator', creatorId],
+    queryFn: () => creatorsApi.getById(creatorId!),
+    enabled: !!creatorId,
+  });
+
+  const creatorData = creatorResponse?.data.data;
+  const creator = creatorData ? {
+    id: creatorData.id,
+    name: `${creatorData.user.firstName} ${creatorData.user.lastName}`,
+    avatar: creatorData.avatar,
+    coverImage: creatorData.coverImage,
+    specialty: creatorData.specialty,
+    rating: creatorData.rating,
+    reviewCount: creatorData.reviewCount,
+    location: creatorData.location,
+    memberSince: creatorData.memberSince,
+    bio: creatorData.bio,
+    skills: creatorData.skills,
+    portfolio: creatorData.portfolio.map(item => ({
+      id: item.id,
+      image: item.imageUrl,
+      title: item.title,
+    })),
+    stats: {
+      projectsCompleted: creatorData.projectsCompleted,
+      repeatClients: creatorData.repeatClients,
+      avgResponseTime: `${creatorData.avgResponseTimeMinutes} min`,
+    }
+  } : defaultCreator;
+
+  // Use hardcoded reviews since API doesn't have them yet
+  const reviews = reviewsData["default"] || defaultReviews;
   const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 2);
-  
+
   const initials = creator.name
     .split(" ")
     .map((n) => n[0])

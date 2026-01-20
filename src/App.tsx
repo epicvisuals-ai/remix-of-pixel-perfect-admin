@@ -68,7 +68,7 @@ const App = () => (
                       <Route path="/my-requests" element={<MyRequestsPage />} />
                       <Route path="/create-request" element={<CreateRequestPage />} />
                       <Route path="/creators" element={<CreatorsPage />} />
-                      <Route path="/creators/:id" element={<CreatorProfilePage />} />
+                      <Route path="/creators/:creatorId" element={<CreatorProfilePage />} />
                       <Route path="/messages" element={<MessagesPage />} />
                       <Route path="/projects" element={<ProjectsPage />} />
                       <Route path="/create-project" element={<CreateProjectPage />} />
