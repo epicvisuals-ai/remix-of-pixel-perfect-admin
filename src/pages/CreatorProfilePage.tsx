@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, MapPin, Calendar, MessageCircle } from "lucide-react";
@@ -12,6 +12,7 @@ import { ReviewCard } from "@/components/creators/ReviewCard";
 import { RequestQuoteModal } from "@/components/creators/RequestQuoteModal";
 import PortfolioPreviewModal, { PortfolioItem } from "@/components/creators/PortfolioPreviewModal";
 import { useMessaging } from "@/contexts/MessagingContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import { creatorsApi } from "@/lib/api";
 
 // Mock reviews data
@@ -305,6 +306,7 @@ export default function CreatorProfilePage() {
   const { creatorId } = useParams<{ creatorId: string }>();
   const navigate = useNavigate();
   const { startConversation } = useMessaging();
+  const { setFavorites } = useFavorites();
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [portfolioPreviewOpen, setPortfolioPreviewOpen] = useState(false);
@@ -325,6 +327,8 @@ export default function CreatorProfilePage() {
   });
 
   const creatorData = creatorResponse?.data.data;
+  const creatorIsFavorite = creatorData?.isFavorite;
+  const creatorUserId = creatorData?.userId;
   const creator = creatorData ? {
     id: creatorData.id,
     userId: creatorData.userId,
@@ -349,6 +353,26 @@ export default function CreatorProfilePage() {
       avgResponseTime: `${creatorData.avgResponseTimeMinutes} min`,
     }
   } : defaultCreator;
+
+  useEffect(() => {
+    if (!creatorUserId || creatorIsFavorite === undefined) {
+      return;
+    }
+
+    setFavorites((prevFavorites) => {
+      const alreadyFavorite = prevFavorites.includes(creatorUserId);
+
+      if (creatorIsFavorite && !alreadyFavorite) {
+        return [...prevFavorites, creatorUserId];
+      }
+
+      if (!creatorIsFavorite && alreadyFavorite) {
+        return prevFavorites.filter((id) => id !== creatorUserId);
+      }
+
+      return prevFavorites;
+    });
+  }, [creatorUserId, creatorIsFavorite, setFavorites]);
 
   // Use hardcoded reviews since API doesn't have them yet
   const reviews = reviewsData["default"] || defaultReviews;
