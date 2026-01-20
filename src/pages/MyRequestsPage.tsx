@@ -65,6 +65,23 @@ const getStatusBadgeVariant = (status: Request["status"]) => {
   }
 };
 
+const normalizeStatus = (value?: string): Request["status"] => {
+  switch (value?.toLowerCase()) {
+    case "submitted":
+      return "Submitted";
+    case "in progress":
+    case "in_progress":
+      return "In Progress";
+    case "approved":
+      return "Approved";
+    case "rejected":
+      return "Rejected";
+    case "created":
+    default:
+      return "Created";
+  }
+};
+
 const normalizeContentType = (value?: string): Request["contentType"] =>
   value?.toLowerCase() === "video" ? "video" : "image";
 
@@ -128,10 +145,11 @@ const MyRequestsPage = () => {
           ? (payload.data as ApiRequest[])
           : [];
         const mappedRequests = items.map((item) => {
-          const { type, contentType, ...rest } = item;
+          const { type, contentType, status, ...rest } = item;
           return {
             ...rest,
             contentType: normalizeContentType(contentType ?? type),
+            status: normalizeStatus(status),
             createdAt: new Date(item.createdAt),
             deadline: item.deadline ? new Date(item.deadline) : undefined,
           };
