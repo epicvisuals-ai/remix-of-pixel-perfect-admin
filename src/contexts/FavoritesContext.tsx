@@ -23,7 +23,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     setIsRefreshing(true);
     try {
       const response = await creatorsApi.getAggregate();
-      const savedCreatorIds = response.data.data.saved.map((c) => c.creatorId);
+      const savedCreatorIds = response.data.data.saved.map((c) => c.userId);
       setFavorites(savedCreatorIds);
     } catch (error) {
       console.error("Failed to refresh favorites:", error);

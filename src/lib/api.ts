@@ -131,7 +131,7 @@ export const teamApi = {
 // Creator types
 export interface SavedCreator {
   id: string;
-  creatorId: string;
+  userId: string;
   avatar: string | null;
   name: string | null;
   specialty: string | null;
@@ -141,7 +141,7 @@ export interface SavedCreator {
 
 export interface WorkedWithCreator {
   id: string;
-  creatorId: string;
+  userId: string;
   avatar: string | null;
   name: string | null;
   specialty: string | null;
@@ -238,8 +238,8 @@ export interface RemoveFavoriteResponse {
 
 // Favorites API functions
 export const favoritesApi = {
-  add: (creatorId: string) => 
+  add: (creatorId: string) =>
     api.post<AddFavoriteResponse>('/favorites', { creator_id: creatorId }),
-  remove: (creatorId: string) => 
-    api.delete<RemoveFavoriteResponse>(`/favorites/${creatorId}`),
+  remove: (userId: string) =>
+    api.delete<RemoveFavoriteResponse>(`/favorites/${userId}`),
 };

@@ -128,7 +128,7 @@ export default function CreatorsPage() {
         setWorkedWithCreators(data.workedWith);
         setExploreCreators(data.explore);
         // Sync favorites with saved creators
-        setFavorites(data.saved.map((c) => c.creatorId));
+        setFavorites(data.saved.map((c) => c.userId));
       } catch (error) {
         console.error("Failed to fetch creators:", error);
       } finally {
@@ -160,7 +160,7 @@ export default function CreatorsPage() {
           setWorkedWithCreators(data.workedWith);
           setExploreCreators(data.explore);
           // Sync favorites with saved creators
-          setFavorites(data.saved.map((c) => c.creatorId));
+          setFavorites(data.saved.map((c) => c.userId));
         } catch (error) {
           console.error("Failed to fetch creators with search query:", error);
         }
@@ -173,7 +173,7 @@ export default function CreatorsPage() {
           setWorkedWithCreators(data.workedWith);
           setExploreCreators(data.explore);
           // Sync favorites with saved creators
-          setFavorites(data.saved.map((c) => c.creatorId));
+          setFavorites(data.saved.map((c) => c.userId));
         } catch (error) {
           console.error("Failed to fetch creators:", error);
         }
@@ -204,12 +204,12 @@ export default function CreatorsPage() {
       setSavedCreators((prev) => [newSavedCreator, ...prev]);
     } else {
       // Removing from favorite - remove from savedCreators
-      setSavedCreators((prev) => prev.filter((c) => c.creatorId !== creatorId));
+      setSavedCreators((prev) => prev.filter((c) => c.userId !== creatorId));
     }
   };
 
-  const handleSavedCreatorRemove = (creatorId: string) => {
-    setSavedCreators((prev) => prev.filter((c) => c.creatorId !== creatorId));
+  const handleSavedCreatorRemove = (userId: string) => {
+    setSavedCreators((prev) => prev.filter((c) => c.userId !== userId));
   };
 
   return (
@@ -253,12 +253,12 @@ export default function CreatorsPage() {
                 {savedCreators.map((creator) => (
                   <FavoriteCreatorCard
                     key={creator.id}
-                    id={creator.creatorId}
+                    userId={creator.userId}
                     name={creator.name || "Unknown"}
                     avatar={creator.avatar || ""}
                     specialty={creator.specialty || "Creator"}
                     rating={creator.rating || 0}
-                    onRemove={() => handleSavedCreatorRemove(creator.creatorId)}
+                    onRemove={() => handleSavedCreatorRemove(creator.userId)}
                   />
                 ))}
               </div>
@@ -275,7 +275,7 @@ export default function CreatorsPage() {
                 {workedWithCreators.map((creator) => (
                   <WorkedWithCard
                     key={creator.id}
-                    creatorId={creator.creatorId}
+                    creatorId={creator.userId}
                     name={creator.name || "Unknown"}
                     avatar={creator.avatar || ""}
                     collaborationCount={creator.projectCount || 0}
