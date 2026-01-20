@@ -9,7 +9,7 @@ interface Request {
   id: string;
   contentType: "image" | "video";
   budget: number;
-  status: "Created" | "Submitted" | "In Progress" | "Approved" | "Rejected";
+  status: "Created" | "Submitted" | "In Review" | "In Progress" | "Approved" | "Rejected";
   createdAt: Date;
   brief: string;
   toneOfVoice?: string;
@@ -44,6 +44,9 @@ const normalizeStatus = (value?: string): Request["status"] => {
   switch (value?.toLowerCase()) {
     case "submitted":
       return "Submitted";
+    case "in review":
+    case "in_review":
+      return "In Review";
     case "in progress":
     case "in_progress":
       return "In Progress";
