@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Heart } from "lucide-react";
 import { CreatorCard } from "@/components/creators/CreatorCard";
 import { WorkedWithCard } from "@/components/creators/WorkedWithCard";
@@ -114,7 +114,9 @@ export default function CreatorsPage() {
   const [workedWithCreators, setWorkedWithCreators] = useState<WorkedWithCreator[]>([]);
   const [exploreCreators, setExploreCreators] = useState<ExploreCreator[]>([]);
   const { setFavorites } = useFavorites();
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Initial load - fetch all creators
   useEffect(() => {
     const fetchCreators = async () => {
       try {
@@ -135,13 +137,52 @@ export default function CreatorsPage() {
     fetchCreators();
   }, [setFavorites]);
 
-  const filteredExploreCreators = exploreCreators.filter(
-    (creator) => {
-      const name = `${creator.user.firstName} ${creator.user.lastName}`.toLowerCase();
-      return name.includes(searchQuery.toLowerCase()) ||
-        creator.specialty.toLowerCase().includes(searchQuery.toLowerCase());
+  // Handle search with debouncing - call API when query has 3+ characters
+  useEffect(() => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
     }
-  );
+
+    // If search is less than 3 characters, no API call needed
+    if (searchQuery.length > 0 && searchQuery.length < 3) {
+      return;
+    }
+
+    debounceTimeout.current = setTimeout(async () => {
+      if (searchQuery.length >= 3) {
+        try {
+          const response = await creatorsApi.getAggregate(searchQuery);
+          const data = response.data.data;
+          setSavedCreators(data.saved);
+          setWorkedWithCreators(data.workedWith);
+          setExploreCreators(data.explore);
+          // Sync favorites with saved creators
+          setFavorites(data.saved.map((c) => c.creatorId));
+        } catch (error) {
+          console.error("Failed to fetch creators with search query:", error);
+        }
+      } else if (searchQuery.length === 0) {
+        // If search is cleared, fetch all creators again
+        try {
+          const response = await creatorsApi.getAggregate();
+          const data = response.data.data;
+          setSavedCreators(data.saved);
+          setWorkedWithCreators(data.workedWith);
+          setExploreCreators(data.explore);
+          // Sync favorites with saved creators
+          setFavorites(data.saved.map((c) => c.creatorId));
+        } catch (error) {
+          console.error("Failed to fetch creators:", error);
+        }
+      }
+    }, 500);
+
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, [searchQuery, setFavorites]);
 
   return (
     <div className="space-y-8 pb-8">
@@ -222,10 +263,10 @@ export default function CreatorsPage() {
                 Explore all creators
               </h2>
               <span className="text-sm text-muted-foreground">
-                {filteredExploreCreators.length} creator{filteredExploreCreators.length !== 1 ? "s" : ""}
+                {exploreCreators.length} creator{exploreCreators.length !== 1 ? "s" : ""}
               </span>
             </div>
-            {filteredExploreCreators.length > 0 ? (
+            {exploreCreators.length > 0 ? (
               <Carousel
                 opts={{
                   align: "start",
@@ -234,7 +275,7 @@ export default function CreatorsPage() {
                 className="w-full"
               >
                 <CarouselContent className="-ml-4">
-                  {filteredExploreCreators.map((creator) => (
+                  {exploreCreators.map((creator) => (
                     <CarouselItem
                       key={creator.id}
                       className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
