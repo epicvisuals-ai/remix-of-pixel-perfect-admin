@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
-import { favoritesApi } from "@/lib/api";
+import { favoritesApi, creatorsApi } from "@/lib/api";
 import { toast } from "sonner";
 
 interface FavoritesContextType {
@@ -8,6 +8,8 @@ interface FavoritesContextType {
   toggleFavorite: (creatorId: string) => Promise<void>;
   isFavorite: (creatorId: string) => boolean;
   isToggling: string | null;
+  refreshFavorites: () => Promise<void>;
+  isRefreshing: boolean;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
@@ -15,6 +17,20 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isToggling, setIsToggling] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshFavorites = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await creatorsApi.getAggregate();
+      const savedCreatorIds = response.data.data.saved.map((c) => c.creatorId);
+      setFavorites(savedCreatorIds);
+    } catch (error) {
+      console.error("Failed to refresh favorites:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
 
   const toggleFavorite = useCallback(async (creatorId: string) => {
     if (isToggling) return;
@@ -61,7 +77,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const isFavorite = useCallback((creatorId: string) => favorites.includes(creatorId), [favorites]);
 
   return (
-    <FavoritesContext.Provider value={{ favorites, setFavorites, toggleFavorite, isFavorite, isToggling }}>
+    <FavoritesContext.Provider value={{ favorites, setFavorites, toggleFavorite, isFavorite, isToggling, refreshFavorites, isRefreshing }}>
       {children}
     </FavoritesContext.Provider>
   );
