@@ -220,7 +220,7 @@ const MyRequestsPage = () => {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-muted-foreground">ID</TableHead>
+              {/* <TableHead className="text-muted-foreground">ID</TableHead> */}
               <TableHead className="text-muted-foreground">Type</TableHead>
               <TableHead className="text-muted-foreground">Budget</TableHead>
               <TableHead className="text-muted-foreground">Status</TableHead>
@@ -231,9 +231,9 @@ const MyRequestsPage = () => {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={`request-skeleton-${index}`}>
-                  <TableCell>
+                  {/* <TableCell>
                     <Skeleton className="h-4 w-20" />
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Skeleton className="h-4 w-4 rounded-full" />
@@ -254,7 +254,7 @@ const MyRequestsPage = () => {
             ) : requests.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={4}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No requests found matching your criteria.
@@ -267,9 +267,9 @@ const MyRequestsPage = () => {
                   className="hover:bg-muted/50 cursor-pointer"
                   onClick={() => handleRowClick(request)}
                 >
-                  <TableCell className="font-medium text-foreground">
+                  {/* <TableCell className="font-medium text-foreground">
                     {request.id}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <TypeIcon type={request.type} />
