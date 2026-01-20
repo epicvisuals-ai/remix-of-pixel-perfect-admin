@@ -14,6 +14,7 @@ import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import MyJobsPage from "./pages/MyJobsPage";
 import MyRequestsPage from "./pages/MyRequestsPage";
+import MyRequestDetailPage from "./pages/MyRequestDetailPage";
 import CreateRequestPage from "./pages/CreateRequestPage";
 import CreatorsPage from "./pages/CreatorsPage";
 import CreatorProfilePage from "./pages/CreatorProfilePage";
@@ -66,6 +67,7 @@ const App = () => (
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/my-jobs" element={<MyJobsPage />} />
                       <Route path="/my-requests" element={<MyRequestsPage />} />
+                      <Route path="/my-requests/:requestId" element={<MyRequestDetailPage />} />
                       <Route path="/create-request" element={<CreateRequestPage />} />
                       <Route path="/creators" element={<CreatorsPage />} />
                       <Route path="/creators/:creatorId" element={<CreatorProfilePage />} />

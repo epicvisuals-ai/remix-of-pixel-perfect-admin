@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image, Video, Plus, Search, ArrowUpDown, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { RequestDetailsSheet } from "@/components/admin/RequestDetailsSheet";
 import api from "@/lib/api";
 import {
   Table,
@@ -105,8 +104,6 @@ const MyRequestsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
-  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -180,8 +177,7 @@ const MyRequestsPage = () => {
   }, [searchQuery, sortOption, statusFilter]);
 
   const handleRowClick = (request: Request) => {
-    setSelectedRequest(request);
-    setIsDetailsOpen(true);
+    navigate(`/my-requests/${request.id}`);
   };
 
   return (
@@ -330,11 +326,6 @@ const MyRequestsPage = () => {
         </Table>
       </div>
 
-      <RequestDetailsSheet
-        request={selectedRequest}
-        open={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
-      />
     </div>
   );
 };
