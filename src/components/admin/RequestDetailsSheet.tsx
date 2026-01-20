@@ -41,6 +41,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -196,6 +197,24 @@ const formatFileSize = (bytes: number): string => {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 };
 
+const formatDateInputValue = (value?: Date) =>
+  value ? format(value, "yyyy-MM-dd") : "";
+
+const normalizeRequestStatus = (status: Request["status"]) =>
+  status.toLowerCase().replace(/\s+/g, "_");
+
+const isEditableRequestStatus = (status: Request["status"]) => {
+  const normalized = normalizeRequestStatus(status);
+  return ["created", "submitter", "submitted", "in_review", "rejected", "in_progress"].includes(
+    normalized
+  );
+};
+
+const isFullEditStatus = (status: Request["status"]) => {
+  const normalized = normalizeRequestStatus(status);
+  return ["created", "submitter", "submitted", "in_review", "rejected"].includes(normalized);
+};
+
 export function RequestDetailsSheet({
   request,
   open,
@@ -216,6 +235,16 @@ export function RequestDetailsSheet({
   const [lightboxImages, setLightboxImages] = useState<Attachment[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditingRequest, setIsEditingRequest] = useState(false);
+  const [isSavingRequest, setIsSavingRequest] = useState(false);
+  const [requestDetails, setRequestDetails] = useState<{
+    brief: string;
+    budget: number;
+    deadline?: Date;
+  }>({ brief: "", budget: 0, deadline: undefined });
+  const [editBrief, setEditBrief] = useState("");
+  const [editBudget, setEditBudget] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
   
   // Zoom and pan state for lightbox
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -289,6 +318,19 @@ export function RequestDetailsSheet({
   }, [open]);
 
   useEffect(() => {
+    if (!request) return;
+    setRequestDetails({
+      brief: request.brief,
+      budget: request.budget,
+      deadline: request.deadline,
+    });
+    setEditBrief(request.brief);
+    setEditBudget(String(request.budget));
+    setEditDeadline(formatDateInputValue(request.deadline));
+    setIsEditingRequest(false);
+  }, [request]);
+
+  useEffect(() => {
     if (!open) return;
     const assignedCreatorId = request?.assignedCreator?.id;
     const assignedCreatorUserId = request?.assignedCreator?.userId;
@@ -335,6 +377,85 @@ export function RequestDetailsSheet({
       setIsSubmitting(false);
     }
   }, [isSubmitting, request?.id, toast]);
+
+  const handleEditRequest = () => {
+    setEditBrief(requestDetails.brief);
+    setEditBudget(String(requestDetails.budget));
+    setEditDeadline(formatDateInputValue(requestDetails.deadline));
+    setIsEditingRequest(true);
+  };
+
+  const handleSaveRequest = async () => {
+    if (!request?.id || isSavingRequest) return;
+
+    const updates: { brief?: string; budget?: number; deadline?: string | null } = {};
+    const allowBriefBudgetEdits = isFullEditStatus(request.status);
+    if (allowBriefBudgetEdits) {
+      const trimmedBrief = editBrief.trim();
+      if (trimmedBrief !== requestDetails.brief) {
+        updates.brief = trimmedBrief;
+      }
+
+      const budgetValue = editBudget.trim();
+      if (!budgetValue) {
+        toast({
+          title: "Budget is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const parsedBudget = Number(budgetValue);
+      if (Number.isNaN(parsedBudget)) {
+        toast({
+          title: "Budget must be a number.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (parsedBudget !== requestDetails.budget) {
+        updates.budget = parsedBudget;
+      }
+    }
+
+    const originalDeadline = formatDateInputValue(requestDetails.deadline);
+    if (editDeadline !== originalDeadline) {
+      updates.deadline = editDeadline ? editDeadline : null;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      setIsEditingRequest(false);
+      return;
+    }
+
+    setIsSavingRequest(true);
+    try {
+      const response = await api.patch(`/requests/${request.id}`, updates);
+      const data = response.data?.data;
+      const nextBrief = data?.brief ?? (updates.brief ?? requestDetails.brief);
+      const nextBudget = data?.budget ?? (updates.budget ?? requestDetails.budget);
+      const nextDeadlineValue = data?.deadline ?? updates.deadline;
+      setRequestDetails({
+        brief: nextBrief,
+        budget: nextBudget,
+        deadline: nextDeadlineValue ? new Date(nextDeadlineValue) : undefined,
+      });
+      setEditBrief(nextBrief);
+      setEditBudget(String(nextBudget));
+      setEditDeadline(nextDeadlineValue ? formatDateInputValue(new Date(nextDeadlineValue)) : "");
+      toast({
+        title: "Request updated.",
+      });
+      setIsEditingRequest(false);
+    } catch (error) {
+      console.error("Failed to update request:", error);
+      toast({
+        title: "Unable to save changes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingRequest(false);
+    }
+  };
 
   // Simulate creator typing indicator (mock - would be real-time in production)
   useEffect(() => {
@@ -404,6 +525,10 @@ export function RequestDetailsSheet({
   // Early return AFTER all hooks are declared
   if (!request) return null;
 
+  const normalizedStatus = normalizeRequestStatus(request.status);
+  const canEditAllFields = isFullEditStatus(request.status);
+  const canEditDeadlineOnly = normalizedStatus === "in_progress";
+  const canEditAssignedCreator = request.status !== "Approved";
   const currentStatusIndex = getStatusIndex(request.status);
 
   // Collect all image attachments for lightbox navigation
@@ -711,6 +836,7 @@ export function RequestDetailsSheet({
                   size="sm"
                   onClick={() => setAssignedCreator(null)}
                   className="text-muted-foreground hover:text-foreground"
+                  disabled={!canEditAssignedCreator}
                 >
                   Change
                 </Button>
@@ -721,7 +847,9 @@ export function RequestDetailsSheet({
                   <Select
                     value={selectedCreatorId}
                     onValueChange={setSelectedCreatorId}
-                    disabled={creatorsLoading || !!creatorsError || assigningCreator}
+                    disabled={
+                      creatorsLoading || !!creatorsError || assigningCreator || !canEditAssignedCreator
+                    }
                   >
                     <SelectTrigger className="flex-1">
                       <SelectValue
@@ -776,7 +904,11 @@ export function RequestDetailsSheet({
                   <Button
                     onClick={handleAssignCreator}
                     disabled={
-                      !selectedCreatorId || creatorsLoading || !!creatorsError || assigningCreator
+                      !selectedCreatorId ||
+                      creatorsLoading ||
+                      !!creatorsError ||
+                      assigningCreator ||
+                      !canEditAssignedCreator
                     }
                     size="icon"
                   >
@@ -817,20 +949,42 @@ export function RequestDetailsSheet({
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Budget</p>
-                  <p className="text-sm font-medium text-foreground">
-                    ${request.budget}
-                  </p>
+                  {isEditingRequest && canEditAllFields ? (
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editBudget}
+                      onChange={(event) => setEditBudget(event.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium text-foreground">
+                      ${requestDetails.budget}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {request.deadline && (
+              {(requestDetails.deadline || isEditingRequest) && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 col-span-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Deadline</p>
-                    <p className="text-sm font-medium text-foreground">
-                      {format(request.deadline, "MMM d, yyyy")}
-                    </p>
+                    {isEditingRequest && (canEditAllFields || canEditDeadlineOnly) ? (
+                      <Input
+                        type="date"
+                        value={editDeadline}
+                        onChange={(event) => setEditDeadline(event.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium text-foreground">
+                        {requestDetails.deadline
+                          ? format(requestDetails.deadline, "MMM d, yyyy")
+                          : "Not set"}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -843,9 +997,17 @@ export function RequestDetailsSheet({
           <div>
             <h3 className="text-sm font-medium text-foreground mb-2">Brief</h3>
             <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-foreground leading-relaxed">
-                {request.brief}
-              </p>
+              {isEditingRequest && canEditAllFields ? (
+                <Textarea
+                  value={editBrief}
+                  onChange={(event) => setEditBrief(event.target.value)}
+                  className="min-h-[120px] text-sm"
+                />
+              ) : (
+                <p className="text-sm text-foreground leading-relaxed">
+                  {requestDetails.brief}
+                </p>
+              )}
             </div>
           </div>
 
@@ -1078,18 +1240,32 @@ export function RequestDetailsSheet({
 
           {/* Actions */}
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1">
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit Request
-            </Button>
-            {request.status === "Created" && (
+            {isEditingRequest ? (
               <Button
                 className="flex-1"
-                onClick={handleSubmitForReview}
-                disabled={isSubmitting}
+                onClick={handleSaveRequest}
+                disabled={isSavingRequest}
               >
-                Submit for Review
+                Save Changes
               </Button>
+            ) : (
+              <>
+                {isEditableRequestStatus(request.status) && (
+                  <Button variant="outline" className="flex-1" onClick={handleEditRequest}>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit Request
+                  </Button>
+                )}
+                {request.status === "Created" && (
+                  <Button
+                    className="flex-1"
+                    onClick={handleSubmitForReview}
+                    disabled={isSubmitting}
+                  >
+                    Submit for Review
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
