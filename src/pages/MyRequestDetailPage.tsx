@@ -20,9 +20,9 @@ interface Request {
 interface AssignedCreator {
   id: string;
   userId: string;
-  name?: string;
-  avatar?: string | null;
-  specialty?: string | null;
+  name: string;
+  avatar?: string;
+  specialty: string;
 }
 
 interface ApiRequestDetail
@@ -69,9 +69,9 @@ const mapRequestDetail = (requestId: string, data?: ApiRequestDetail): Request =
     ? {
         id: assignedCreator.id ?? assignedCreator.userId ?? "",
         userId: assignedCreator.userId ?? assignedCreator.id ?? "",
-        name: assignedCreator.name ?? undefined,
+        name: assignedCreator.name ?? "Unknown Creator",
         avatar: assignedCreator.avatar ?? undefined,
-        specialty: assignedCreator.specialty ?? undefined,
+        specialty: assignedCreator.specialty ?? "Content Creator",
       }
     : undefined;
 

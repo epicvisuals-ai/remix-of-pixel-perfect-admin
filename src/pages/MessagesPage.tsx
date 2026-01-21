@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, Search, MessageCircle } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Send, Search, MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMessaging } from "@/contexts/MessagingContext";
 import { TypingIndicator } from "@/components/messaging/TypingIndicator";
 import { MessageStatusIndicator } from "@/components/messaging/MessageStatusIndicator";
@@ -30,6 +31,27 @@ function formatMessageTime(date: Date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function ConversationSkeleton() {
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <Skeleton className="h-12 w-12 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-3 w-32" />
+      </div>
+    </div>
+  );
+}
+
+function MessageSkeleton({ isOwn }: { isOwn: boolean }) {
+  return (
+    <div className={cn("flex gap-3", isOwn ? "flex-row-reverse" : "flex-row")}>
+      {!isOwn && <Skeleton className="h-8 w-8 rounded-full shrink-0" />}
+      <Skeleton className={cn("h-16 rounded-2xl", isOwn ? "w-48" : "w-56")} />
+    </div>
+  );
+}
+
 export default function MessagesPage() {
   const {
     conversations,
@@ -39,13 +61,21 @@ export default function MessagesPage() {
     sendMessage,
     setIsOpen,
     isParticipantTyping,
+    isLoadingConversations,
+    isLoadingMessages,
+    searchConversations,
+    loadMoreMessages,
+    hasMoreMessages,
   } = useMessaging();
 
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesStartRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   const activeConv = conversations.find((c) => c.id === activeConversation);
 
@@ -54,15 +84,34 @@ export default function MessagesPage() {
     setIsOpen(false);
   }, [setIsOpen]);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isParticipantTyping]);
+    if (!isLoadingMessages) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isParticipantTyping, isLoadingMessages]);
 
+  // Focus input when conversation changes
   useEffect(() => {
-    if (activeConversation) {
+    if (activeConversation && !isLoadingMessages) {
       inputRef.current?.focus();
     }
-  }, [activeConversation]);
+  }, [activeConversation, isLoadingMessages]);
+
+  // Debounced search
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(() => {
+      searchConversations(value);
+      setIsSearching(false);
+    }, 300);
+  }, [searchConversations]);
 
   const handleSend = () => {
     if (newMessage.trim() || pendingAttachments.length > 0) {
@@ -87,9 +136,11 @@ export default function MessagesPage() {
     setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.participantName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleLoadMore = async () => {
+    if (hasMoreMessages && !isLoadingMessages) {
+      await loadMoreMessages();
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -107,15 +158,24 @@ export default function MessagesPage() {
               <Input
                 placeholder="Search conversations..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
             </div>
           </div>
 
           {/* Conversation List */}
           <ScrollArea className="flex-1">
-            {filteredConversations.length === 0 ? (
+            {isLoadingConversations && conversations.length === 0 ? (
+              <div className="divide-y divide-border">
+                {[...Array(5)].map((_, i) => (
+                  <ConversationSkeleton key={i} />
+                ))}
+              </div>
+            ) : conversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <MessageCircle className="h-12 w-12 text-muted-foreground/30" />
                 <p className="mt-4 text-sm text-muted-foreground">
@@ -127,7 +187,7 @@ export default function MessagesPage() {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {filteredConversations.map((conv) => (
+                {conversations.map((conv) => (
                   <button
                     key={conv.id}
                     onClick={() => setActiveConversation(conv.id)}
@@ -195,6 +255,37 @@ export default function MessagesPage() {
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
+                  {/* Load more button */}
+                  {hasMoreMessages && (
+                    <div className="flex justify-center" ref={messagesStartRef}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMessages}
+                      >
+                        {isLoadingMessages ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load earlier messages"
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Loading skeleton */}
+                  {isLoadingMessages && messages.length === 0 && (
+                    <div className="space-y-4">
+                      <MessageSkeleton isOwn={false} />
+                      <MessageSkeleton isOwn={true} />
+                      <MessageSkeleton isOwn={false} />
+                    </div>
+                  )}
+                  
+                  {/* Messages list */}
                   {messages.map((message, index) => {
                     const showDate =
                       index === 0 ||
@@ -262,6 +353,7 @@ export default function MessagesPage() {
                       </div>
                     );
                   })}
+                  
                   {isParticipantTyping && (
                     <div className="flex gap-3">
                       <Avatar className="h-8 w-8 shrink-0">

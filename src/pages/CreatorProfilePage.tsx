@@ -359,7 +359,7 @@ export default function CreatorProfilePage() {
       return;
     }
 
-    setFavorites((prevFavorites) => {
+    setFavorites((prevFavorites: string[]) => {
       const alreadyFavorite = prevFavorites.includes(creatorUserId);
 
       if (creatorIsFavorite && !alreadyFavorite) {
@@ -367,7 +367,7 @@ export default function CreatorProfilePage() {
       }
 
       if (!creatorIsFavorite && alreadyFavorite) {
-        return prevFavorites.filter((id) => id !== creatorUserId);
+        return prevFavorites.filter((id: string) => id !== creatorUserId);
       }
 
       return prevFavorites;
