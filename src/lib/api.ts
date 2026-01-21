@@ -156,11 +156,13 @@ export interface SavedCreator {
 
 export interface WorkedWithCreator {
   id: string;
-  userId: string;
+  user: {
+    firstName: string;
+    lastName: string;
+  };
   avatar: string | null;
-  name: string | null;
   specialty: string | null;
-  projectCount: number;
+  collaborationCount: number;
 }
 
 export interface ExploreCreator {

@@ -279,10 +279,10 @@ export default function CreatorsPage() {
                 {workedWithCreators.map((creator) => (
                   <WorkedWithCard
                     key={creator.id}
-                    creatorId={creator.userId}
-                    name={creator.name || "Unknown"}
+                    creatorId={creator.id}
+                    name={`${creator.user.firstName} ${creator.user.lastName}`}
                     avatar={creator.avatar || ""}
-                    collaborationCount={creator.projectCount || 0}
+                    collaborationCount={creator.collaborationCount || 0}
                     specialty={creator.specialty || "Creator"}
                   />
                 ))}

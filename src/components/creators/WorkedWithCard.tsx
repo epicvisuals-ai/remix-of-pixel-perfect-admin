@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 
 interface WorkedWithCardProps {
   creatorId: string;
@@ -19,7 +18,10 @@ export function WorkedWithCard({ creatorId, name, avatar, collaborationCount, sp
     .toUpperCase();
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/50">
+    <div
+      className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/50 cursor-pointer"
+      onClick={() => navigate(`/creators/${creatorId}`)}
+    >
       <Avatar className="h-12 w-12">
         <AvatarImage src={avatar} alt={name} />
         <AvatarFallback className="bg-primary/10 text-primary">
@@ -32,9 +34,6 @@ export function WorkedWithCard({ creatorId, name, avatar, collaborationCount, sp
           {collaborationCount} project{collaborationCount !== 1 ? "s" : ""} • {specialty}
         </p>
       </div>
-      <Button variant="outline" size="sm" className="shrink-0" onClick={() => navigate(`/creators/${creatorId}`)}>
-        View
-      </Button>
     </div>
   );
 }
