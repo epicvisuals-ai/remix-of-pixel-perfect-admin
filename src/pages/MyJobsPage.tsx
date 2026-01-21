@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send, Circle, Search, ArrowUpDown, Filter, TrendingUp, BarChart3 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
+import { creatorRequestsApi, type CreatorRequestItem } from "@/lib/api";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -29,7 +31,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { toast } from "sonner";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis } from "recharts";
 import { Progress } from "@/components/ui/progress";
@@ -63,59 +64,44 @@ interface Job {
   messages: Message[];
 }
 
-// Mock data
-const mockJobs: Job[] = [
-  {
-    id: "req-001",
-    company: "Acme Inc",
-    type: "Image",
-    budget: 250,
-    status: "Submitted",
-    createdAt: new Date("2024-01-20"),
-    brief: "Need a hero banner for our new SaaS product launch. Modern, clean, with abstract tech elements. Should convey innovation and trust.",
-    tone: "Corporate",
-    deadline: "Feb 15",
+// Map API response to Job interface
+const mapApiRequestToJob = (request: CreatorRequestItem): Job => {
+  // Capitalize first letter of content type (video -> Video, image -> Image)
+  const type = (request.contentType.charAt(0).toUpperCase() + request.contentType.slice(1)) as Job["type"];
+
+  // Capitalize first letter of status (submitted -> Submitted, in progress -> In Progress, approved -> Approved)
+  const statusMap: Record<string, Job["status"]> = {
+    'submitted': 'Submitted',
+    'in progress': 'In Progress',
+    'in_progress': 'In Progress',
+    'approved': 'Approved',
+    'rejected': 'Rejected',
+  };
+  const status = statusMap[request.status.toLowerCase()] || 'Submitted';
+
+  // Format company name from creator's name
+  const company = `${request.creator.firstName} ${request.creator.lastName}`;
+
+  // Capitalize tone of voice (playful -> Playful)
+  const tone = request.toneOfVoice.charAt(0).toUpperCase() + request.toneOfVoice.slice(1);
+
+  // Format deadline
+  const deadline = request.deadline ? format(new Date(request.deadline), "MMM d") : "TBD";
+
+  return {
+    id: request.id,
+    company,
+    type,
+    budget: request.budget,
+    status,
+    createdAt: new Date(request.createdAt),
+    brief: request.brief,
+    tone,
+    deadline,
     deliverables: [],
-    messages: [
-      { id: "msg-1", author: "Sarah M.", authorType: "client", content: "Hi! Looking forward to working with you on this project.", createdAt: new Date("2024-01-20T10:30:00") },
-    ],
-  },
-  {
-    id: "req-003",
-    company: "TechCorp",
-    type: "Image",
-    budget: 350,
-    status: "In Progress",
-    createdAt: new Date("2024-01-18"),
-    brief: "Create a series of social media graphics for our upcoming product launch campaign. Need 5 variations for different platforms.",
-    tone: "Professional",
-    deadline: "Feb 20",
-    deliverables: [],
-    messages: [
-      { id: "msg-2", author: "John D.", authorType: "client", content: "Please ensure the brand colors #3B82F6 and #10B981 are used consistently.", createdAt: new Date("2024-01-18T09:00:00") },
-      { id: "msg-3", author: "You", authorType: "creator", content: "Got it! I'll make sure to follow the brand guidelines. Do you have any specific font preferences?", createdAt: new Date("2024-01-18T11:30:00") },
-      { id: "msg-4", author: "John D.", authorType: "client", content: "We use Inter for headings and Open Sans for body text.", createdAt: new Date("2024-01-18T14:15:00") },
-    ],
-  },
-  {
-    id: "req-004",
-    company: "StartupXYZ",
-    type: "Video",
-    budget: 400,
-    status: "Approved",
-    createdAt: new Date("2024-01-15"),
-    brief: "30-second promotional video for our mobile app. Should be energetic and appeal to young professionals.",
-    tone: "Casual",
-    deadline: "Feb 28",
-    deliverables: [
-      { id: "del-1", name: "promo-video-final.mp4", size: "24.5 MB", uploadedAt: new Date("2024-02-10") },
-    ],
-    messages: [
-      { id: "msg-5", author: "Mike T.", authorType: "client", content: "Great work! The video looks amazing!", createdAt: new Date("2024-02-10T16:00:00") },
-      { id: "msg-6", author: "You", authorType: "creator", content: "Thank you! It was a pleasure working on this project.", createdAt: new Date("2024-02-10T16:30:00") },
-    ],
-  },
-];
+    messages: [],
+  };
+};
 
 const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return bytes + " B";
@@ -592,11 +578,39 @@ type SortOption = "date-desc" | "date-asc" | "budget-desc" | "budget-asc";
 type StatusFilter = "all" | Job["status"];
 
 const MyJobsPage = () => {
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch creator requests on mount
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await creatorRequestsApi.getRequests();
+
+        if (response.data.success) {
+          const mappedJobs = response.data.data.map(mapApiRequestToJob);
+          setJobs(mappedJobs);
+        } else {
+          setError("Failed to load requests");
+        }
+      } catch (err) {
+        console.error("Error fetching creator requests:", err);
+        setError("Failed to load requests. Please try again later.");
+        toast.error("Failed to load requests");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
 
   const filteredAndSortedJobs = useMemo(() => {
     let result = [...jobs];
@@ -924,7 +938,19 @@ const MyJobsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAndSortedJobs.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  Loading requests...
+                </TableCell>
+              </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  <div className="text-red-600 dark:text-red-400">{error}</div>
+                </TableCell>
+              </TableRow>
+            ) : filteredAndSortedJobs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   No jobs found matching your criteria.

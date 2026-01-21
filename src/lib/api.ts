@@ -259,3 +259,39 @@ export const favoritesApi = {
   remove: (userId: string) =>
     api.delete<RemoveFavoriteResponse>(`/favorites/${userId}`),
 };
+
+// Creator Request types
+export interface CreatorRequestItem {
+  id: string;
+  contentType: string;
+  brief: string;
+  toneOfVoice: string;
+  budget: number;
+  deadline: string;
+  status: string;
+  createdAt: string;
+  creator: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  };
+}
+
+export interface CreatorRequestsResponse {
+  success: boolean;
+  data: CreatorRequestItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+
+// Creator Requests API functions
+export const creatorRequestsApi = {
+  getRequests: (page = 1, limit = 20) =>
+    api.get<CreatorRequestsResponse>('/creator/requests', {
+      params: { page, limit },
+    }),
+};
