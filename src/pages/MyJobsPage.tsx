@@ -12,8 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { creatorRequestsApi, type CreatorRequestItem } from "@/lib/api";
+import { creatorRequestsApi, type CreatorRequestItem, type RequestStatsData } from "@/lib/api";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -618,6 +619,8 @@ const MyJobsPage = () => {
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<RequestStatsData | null>(null);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
 
   // Fetch creator requests with filters
   useEffect(() => {
@@ -700,6 +703,37 @@ const MyJobsPage = () => {
     };
   }, [searchQuery, sortOption, statusFilter]);
 
+  // Fetch request stats
+  useEffect(() => {
+    let isActive = true;
+
+    const fetchStats = async () => {
+      try {
+        setIsStatsLoading(true);
+        const response = await creatorRequestsApi.getRequestStats();
+
+        if (isActive && response.data.success) {
+          setStats(response.data.data);
+        }
+      } catch (err) {
+        if (isActive) {
+          console.error("Error fetching request stats:", err);
+          // Don't show error toast for stats, just log it
+        }
+      } finally {
+        if (isActive) {
+          setIsStatsLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   // Jobs are now filtered and sorted on the server, so we can use them directly
   const filteredAndSortedJobs = jobs;
 
@@ -759,34 +793,51 @@ const MyJobsPage = () => {
     );
   };
 
-  // Analytics calculations
+  // Analytics calculations - use real stats data when available
   const analytics = useMemo(() => {
+    if (!stats) {
+      // Return default values while loading
+      return {
+        statusCounts: {
+          Submitted: 0,
+          "In Progress": 0,
+          Approved: 0,
+          Rejected: 0,
+        },
+        statusData: [],
+        totalJobs: 0,
+        completedJobs: 0,
+        completionRate: 0,
+        totalEarnings: 0,
+        pendingEarnings: 0,
+        earningsByMonth: [],
+      };
+    }
+
     const statusCounts = {
-      Submitted: jobs.filter((j) => j.status === "Submitted").length,
-      "In Progress": jobs.filter((j) => j.status === "In Progress").length,
-      Approved: jobs.filter((j) => j.status === "Approved").length,
-      Rejected: jobs.filter((j) => j.status === "Rejected").length,
+      Submitted: stats.jobsByStatus.submitted,
+      "In Progress": stats.jobsByStatus.in_progress,
+      Approved: stats.jobsByStatus.approved,
+      Rejected: stats.jobsByStatus.rejected,
     };
 
-    const totalJobs = jobs.length;
-    const completedJobs = statusCounts.Approved;
-    const completionRate = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
+    const totalJobs = Object.values(stats.jobsByStatus).reduce((sum, count) => sum + count, 0);
+    const completedJobs = stats.jobsByStatus.approved;
+    const completionRate = stats.completionRate;
 
-    const totalEarnings = jobs
-      .filter((j) => j.status === "Approved")
-      .reduce((sum, j) => sum + j.budget, 0);
+    const totalEarnings = stats.totalEarnings;
+    const pendingEarnings = stats.pendingEarnings;
 
-    const pendingEarnings = jobs
-      .filter((j) => j.status === "In Progress" || j.status === "Submitted")
-      .reduce((sum, j) => sum + j.budget, 0);
-
-    // Earnings by month (mock data for demo)
-    const earningsByMonth = [
-      { month: "Oct", earnings: 450 },
-      { month: "Nov", earnings: 800 },
-      { month: "Dec", earnings: 650 },
-      { month: "Jan", earnings: totalEarnings },
-    ];
+    // Format earnings trend data for chart
+    const earningsByMonth = stats.earningsTrend.map((item) => {
+      // Parse month from "YYYY-MM" format to "MMM" format
+      const date = new Date(item.month + "-01");
+      const monthName = format(date, "MMM");
+      return {
+        month: monthName,
+        earnings: item.amount,
+      };
+    });
 
     const statusData = [
       { name: "Submitted", value: statusCounts.Submitted, fill: "hsl(217, 91%, 60%)" },
@@ -805,7 +856,7 @@ const MyJobsPage = () => {
       pendingEarnings,
       earningsByMonth,
     };
-  }, [jobs]);
+  }, [stats]);
 
   const chartConfig = {
     earnings: {
@@ -839,104 +890,175 @@ const MyJobsPage = () => {
 
       {/* Analytics Dashboard */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in">
-        {/* Total Earnings Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              ${analytics.totalEarnings}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              +${analytics.pendingEarnings} pending
-            </p>
-          </CardContent>
-        </Card>
+        {isStatsLoading ? (
+          <>
+            {/* Skeleton for Total Earnings Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-20 mb-2" />
+                <Skeleton className="h-3 w-28" />
+              </CardContent>
+            </Card>
 
-        {/* Completion Rate Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analytics.completionRate}%</div>
-            <Progress value={analytics.completionRate} className="mt-2 h-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {analytics.completedJobs} of {analytics.totalJobs} jobs completed
-            </p>
-          </CardContent>
-        </Card>
+            {/* Skeleton for Completion Rate Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-2 w-full mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
 
-        {/* Jobs by Status Chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Jobs by Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[100px] w-full">
-              <PieChart>
-                <Pie
-                  data={analytics.statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={25}
-                  outerRadius={40}
-                  paddingAngle={2}
-                  dataKey="value"
-                  nameKey="name"
-                >
-                  {analytics.statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-              </PieChart>
-            </ChartContainer>
-            <div className="flex flex-wrap gap-2 mt-2 justify-center">
-              {analytics.statusData.map((item) => (
-                <div key={item.name} className="flex items-center gap-1 text-xs">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: item.fill }}
-                  />
-                  <span className="text-muted-foreground">{item.name}</span>
+            {/* Skeleton for Jobs by Status Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[100px] w-full mb-2" />
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-16" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Earnings Over Time Chart */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Earnings Trend</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[100px] w-full">
-              <BarChart data={analytics.earningsByMonth}>
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  fontSize={10}
-                />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  cursor={false}
-                />
-                <Bar
-                  dataKey="earnings"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+            {/* Skeleton for Earnings Trend Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[100px] w-full" />
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            {/* Total Earnings Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  ${analytics.totalEarnings.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  +${analytics.pendingEarnings.toFixed(2)} pending
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Completion Rate Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{analytics.completionRate}%</div>
+                <Progress value={analytics.completionRate} className="mt-2 h-2" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {analytics.completedJobs} of {analytics.totalJobs} jobs completed
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Jobs by Status Chart */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Jobs by Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analytics.statusData.length > 0 ? (
+                  <>
+                    <ChartContainer config={chartConfig} className="h-[100px] w-full">
+                      <PieChart>
+                        <Pie
+                          data={analytics.statusData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={25}
+                          outerRadius={40}
+                          paddingAngle={2}
+                          dataKey="value"
+                          nameKey="name"
+                        >
+                          {analytics.statusData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                      </PieChart>
+                    </ChartContainer>
+                    <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                      {analytics.statusData.map((item) => (
+                        <div key={item.name} className="flex items-center gap-1 text-xs">
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: item.fill }}
+                          />
+                          <span className="text-muted-foreground">{item.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-[100px] flex items-center justify-center text-sm text-muted-foreground">
+                    No jobs yet
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Earnings Over Time Chart */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Earnings Trend</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {analytics.earningsByMonth.length > 0 ? (
+                  <ChartContainer config={chartConfig} className="h-[100px] w-full">
+                    <BarChart data={analytics.earningsByMonth}>
+                      <XAxis
+                        dataKey="month"
+                        tickLine={false}
+                        axisLine={false}
+                        fontSize={10}
+                      />
+                      <ChartTooltip
+                        content={<ChartTooltipContent />}
+                        cursor={false}
+                      />
+                      <Bar
+                        dataKey="earnings"
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="h-[100px] flex items-center justify-center text-sm text-muted-foreground">
+                    No earnings data
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Search and Filters */}
