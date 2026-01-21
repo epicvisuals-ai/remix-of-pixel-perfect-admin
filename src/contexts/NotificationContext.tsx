@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { toast } from "sonner";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
-import { notificationsApi, ApiNotification } from "@/lib/api";
+import { notificationsApi, ApiNotification, notificationPreferencesApi, ApiNotificationPreferences } from "@/lib/api";
 
 export interface Notification {
   id: string;
@@ -71,7 +71,7 @@ interface NotificationContextType {
   notificationPermission: NotificationPermission;
   requestNotificationPermission: () => Promise<boolean>;
   preferences: NotificationPreferences;
-  updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
+  updatePreferences: (prefs: Partial<NotificationPreferences>) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -104,6 +104,44 @@ const mapApiNotification = (apiNotif: ApiNotification): Notification => {
   };
 };
 
+// Convert API preferences to UI preferences
+const mapApiPreferences = (apiPrefs: ApiNotificationPreferences): NotificationPreferences => {
+  return {
+    types: {
+      message: apiPrefs.notifyMessages,
+      status_change: apiPrefs.notifyStatusChanges,
+      assignment: apiPrefs.notifyAssignments,
+      system: apiPrefs.notifySystem,
+    },
+    delivery: {
+      inApp: apiPrefs.inAppEnabled,
+      sound: apiPrefs.soundEnabled,
+      browser: apiPrefs.browserNotificationsEnabled,
+      email: apiPrefs.emailDigestEnabled,
+    },
+    emailDigest: {
+      enabled: apiPrefs.emailDigestEnabled,
+      frequency: apiPrefs.emailDigestFrequency,
+      email: "",
+    },
+  };
+};
+
+// Convert UI preferences to API format
+const mapPreferencesToApi = (prefs: NotificationPreferences): Partial<ApiNotificationPreferences> => {
+  return {
+    notifyMessages: prefs.types.message,
+    notifyStatusChanges: prefs.types.status_change,
+    notifyAssignments: prefs.types.assignment,
+    notifySystem: prefs.types.system,
+    inAppEnabled: prefs.delivery.inApp,
+    soundEnabled: prefs.delivery.sound,
+    browserNotificationsEnabled: prefs.delivery.browser,
+    emailDigestEnabled: prefs.emailDigest.enabled,
+    emailDigestFrequency: prefs.emailDigest.frequency,
+  };
+};
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -111,14 +149,42 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { play: playSound } = useNotificationSound();
   const { permission, requestPermission, showNotification, isTabVisible } = useBrowserNotifications();
 
-  const updatePreferences = useCallback((prefs: Partial<NotificationPreferences>) => {
-    setPreferences((prev) => ({
-      ...prev,
-      ...prefs,
-      types: { ...prev.types, ...prefs.types },
-      delivery: { ...prev.delivery, ...prefs.delivery },
-    }));
+  // Fetch preferences from API
+  const fetchPreferences = useCallback(async () => {
+    try {
+      const response = await notificationPreferencesApi.getPreferences();
+      const mappedPreferences = mapApiPreferences(response.data.data);
+      setPreferences(mappedPreferences);
+    } catch (error) {
+      console.error("Failed to fetch notification preferences:", error);
+      // Keep using default preferences on error
+    }
   }, []);
+
+  const updatePreferences = useCallback(async (prefs: Partial<NotificationPreferences>) => {
+    // Update local state immediately for responsive UI
+    const updatedPreferences = {
+      ...preferences,
+      ...prefs,
+      types: { ...preferences.types, ...prefs.types },
+      delivery: { ...preferences.delivery, ...prefs.delivery },
+      emailDigest: { ...preferences.emailDigest, ...prefs.emailDigest },
+    };
+    setPreferences(updatedPreferences);
+
+    // Save to API
+    try {
+      const apiPrefs = mapPreferencesToApi(updatedPreferences);
+      await notificationPreferencesApi.updatePreferences(apiPrefs);
+    } catch (error) {
+      console.error("Failed to update notification preferences:", error);
+      toast.error("Failed to save preferences", {
+        description: "Your preferences could not be saved. Please try again.",
+      });
+      // Revert to previous preferences on error
+      setPreferences(preferences);
+    }
+  }, [preferences]);
 
   const addNotification = useCallback(
     (notification: Omit<Notification, "id" | "createdAt" | "read">, showToast = true) => {
@@ -230,10 +296,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  // Fetch notifications on mount
+  // Fetch notifications and preferences on mount
   useEffect(() => {
     fetchNotifications();
-  }, [fetchNotifications]);
+    fetchPreferences();
+  }, [fetchNotifications, fetchPreferences]);
 
   // Poll for notification count every 30 seconds
   useEffect(() => {
