@@ -364,7 +364,7 @@ export const creatorRequestsApi = {
     sortBy?: string;
     sortOrder?: string;
   }) =>
-    api.get<CreatorRequestsResponse>('/creator/requests', {
+    api.get<CreatorRequestsResponse>('/requests', {
       params: {
         page: params?.page || 1,
         limit: params?.limit || 20,
@@ -375,7 +375,7 @@ export const creatorRequestsApi = {
       },
     }),
   getRequest: (requestId: string, signal?: AbortSignal) =>
-    api.get<{ success: boolean; data: CreatorRequestItem }>(`/creator/requests/${requestId}`, {
+    api.get<{ success: boolean; data: CreatorRequestItem }>(`/requests/${requestId}`, {
       ...(signal ? { signal } : {}),
     }),
   acceptRequest: (requestId: string) =>
