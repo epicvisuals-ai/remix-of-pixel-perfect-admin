@@ -72,6 +72,7 @@ interface NotificationContextType {
   requestNotificationPermission: () => Promise<boolean>;
   preferences: NotificationPreferences;
   updatePreferences: (prefs: Partial<NotificationPreferences>) => Promise<void>;
+  isLoadingPreferences: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -146,11 +147,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState<boolean>(true);
   const { play: playSound } = useNotificationSound();
   const { permission, requestPermission, showNotification, isTabVisible } = useBrowserNotifications();
 
   // Fetch preferences from API
   const fetchPreferences = useCallback(async () => {
+    setIsLoadingPreferences(true);
     try {
       const response = await notificationPreferencesApi.getPreferences();
       const mappedPreferences = mapApiPreferences(response.data.data);
@@ -158,6 +161,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error("Failed to fetch notification preferences:", error);
       // Keep using default preferences on error
+    } finally {
+      setIsLoadingPreferences(false);
     }
   }, []);
 
@@ -371,6 +376,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         requestNotificationPermission: requestPermission,
         preferences,
         updatePreferences,
+        isLoadingPreferences,
       }}
     >
       {children}

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -83,15 +84,82 @@ const digestFrequencies = [
   { value: "weekly", label: "Weekly" },
 ] as const;
 
+function NotificationsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-5 w-96" />
+      </div>
+
+      {/* Notification Types Skeleton */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40 mb-2" />
+          <Skeleton className="h-4 w-80" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between rounded-lg border p-4"
+            >
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-9 w-9 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Delivery Methods Skeleton */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40 mb-2" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between rounded-lg border p-4"
+            >
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-9 w-9 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-72" />
+                </div>
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function NotificationsPage() {
-  const { 
-    preferences, 
+  const {
+    preferences,
     updatePreferences,
     notificationPermission,
     requestNotificationPermission,
+    isLoadingPreferences,
   } = useNotifications();
 
   const [emailInput, setEmailInput] = useState(preferences.emailDigest.email);
+
+  // Show skeleton while loading
+  if (isLoadingPreferences) {
+    return <NotificationsSkeleton />;
+  }
 
   const handleTypeToggle = async (type: keyof Preferences["types"]) => {
     const isCurrentlyEnabled = preferences.types[type];
