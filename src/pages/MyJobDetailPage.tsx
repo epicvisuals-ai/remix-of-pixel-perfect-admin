@@ -53,7 +53,7 @@ function RequestDetailSkeleton() {
   );
 }
 
-const MyRequestDetailPage = () => {
+const MyJobDetailPage = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const [request, setRequest] = useState<RequestDetail | null>(null);
@@ -83,7 +83,7 @@ const MyRequestDetailPage = () => {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
-        console.error("Failed to load request detail", error);
+        console.error("Failed to load job detail", error);
         if (isActive) {
           setRequest(null);
         }
@@ -110,14 +110,12 @@ const MyRequestDetailPage = () => {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Request not found
-          </h1>
+          <h1 className="text-2xl font-semibold text-foreground">Job not found</h1>
           <p className="text-muted-foreground">
-            We couldn't locate that request. Please return to your request list.
+            We couldn't locate that job. Please return to your job list.
           </p>
         </div>
-        <Button onClick={() => navigate("/my-requests")}>Back to My Requests</Button>
+        <Button onClick={() => navigate("/my-jobs")}>Back to My Jobs</Button>
       </div>
     );
   }
@@ -128,11 +126,11 @@ const MyRequestDetailPage = () => {
       open
       onOpenChange={(open) => {
         if (!open) {
-          navigate("/my-requests");
+          navigate("/my-jobs");
         }
       }}
     />
   );
 };
 
-export default MyRequestDetailPage;
+export default MyJobDetailPage;

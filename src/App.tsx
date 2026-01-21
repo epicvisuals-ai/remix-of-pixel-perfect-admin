@@ -14,6 +14,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import MyJobsPage from "./pages/MyJobsPage";
+import MyJobDetailPage from "./pages/MyJobDetailPage";
 import MyRequestsPage from "./pages/MyRequestsPage";
 import MyRequestDetailPage from "./pages/MyRequestDetailPage";
 import CreateRequestPage from "./pages/CreateRequestPage";
@@ -68,6 +69,7 @@ const App = () => (
                       <Route path="/" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/my-jobs" element={<MyJobsPage />} />
+                      <Route path="/my-jobs/:requestId" element={<MyJobDetailPage />} />
                       <Route path="/my-requests" element={<MyRequestsPage />} />
                       <Route path="/my-requests/:requestId" element={<MyRequestDetailPage />} />
                       <Route path="/create-request" element={<CreateRequestPage />} />

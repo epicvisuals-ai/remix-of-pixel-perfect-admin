@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Image, Video, DollarSign, Clock, FileText, Upload, Check, X, File, Trash2, MessageCircle, Send, Circle, Search, ArrowUpDown, Filter, TrendingUp, BarChart3 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -621,6 +622,7 @@ const MyJobsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<RequestStatsData | null>(null);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Fetch creator requests with filters
   useEffect(() => {
@@ -1156,7 +1158,7 @@ const MyJobsPage = () => {
                 <TableRow
                   key={job.id}
                   className="hover:bg-muted/50 cursor-pointer"
-                  onClick={() => setSelectedJob(job)}
+                  onClick={() => navigate(`/my-jobs/${job.id}`)}
                 >
                   {/* <TableCell className="font-medium text-foreground">
                     {job.id}
