@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi, userApi } from '@/lib/api';
+import { messagingApi } from '@/lib/messaging-api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
@@ -47,15 +48,25 @@ const MagicLinkCallback = () => {
           const userResponse = await userApi.getMe();
           const userProfile = userResponse.data;
           setUser(userProfile);
-          
+
           setStatus('success');
-          
+
+          // Call conversations endpoint after 30 seconds
+          setTimeout(async () => {
+            try {
+              await messagingApi.getConversations();
+              console.log('Conversations endpoint called successfully after 30 seconds');
+            } catch (error) {
+              console.error('Failed to fetch conversations after login timeout:', error);
+            }
+          }, 30000);
+
           // Navigate based on onboarding status
           setTimeout(() => {
             if (!userProfile.onboarding_completed) {
-              navigate('/onboarding', { 
-                replace: true, 
-                state: { step: userProfile.onboarding_step } 
+              navigate('/onboarding', {
+                replace: true,
+                state: { step: userProfile.onboarding_step }
               });
             } else {
               navigate('/dashboard', { replace: true });
