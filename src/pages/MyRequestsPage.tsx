@@ -25,6 +25,12 @@ import {
 
 interface Request {
   id: string;
+  creator: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  } | null;
   contentType: "image" | "video";
   budget: number;
   status: "Created" | "Submitted" | "In Progress" | "Approved" | "Rejected";
@@ -94,6 +100,16 @@ const TypeIcon = ({ type }: { type: Request["contentType"] }) => {
   return <Image className="h-4 w-4 text-muted-foreground" />;
 };
 
+const getCreatorInitials = (creator: Request["creator"]) => {
+  if (!creator) {
+    return "?";
+  }
+  const firstInitial = creator.firstName?.trim().charAt(0) ?? "";
+  const lastInitial = creator.lastName?.trim().charAt(0) ?? "";
+  const initials = `${firstInitial}${lastInitial}`.toUpperCase();
+  return initials || "?";
+};
+
 type SortOption = "date-desc" | "date-asc" | "budget-desc" | "budget-asc";
 type StatusFilter = "all" | Request["status"];
 
@@ -145,6 +161,7 @@ const MyRequestsPage = () => {
           const { type, contentType, status, ...rest } = item;
           return {
             ...rest,
+            creator: item.creator ?? null,
             contentType: normalizeContentType(contentType ?? type),
             status: normalizeStatus(status),
             createdAt: new Date(item.createdAt),
@@ -250,6 +267,7 @@ const MyRequestsPage = () => {
               <TableHead className="text-muted-foreground">Type</TableHead>
               <TableHead className="text-muted-foreground">Budget</TableHead>
               <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Creator</TableHead>
               <TableHead className="text-muted-foreground">Created</TableHead>
             </TableRow>
           </TableHeader>
@@ -273,6 +291,12 @@ const MyRequestsPage = () => {
                     <Skeleton className="h-5 w-20 rounded-full" />
                   </TableCell>
                   <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <Skeleton className="h-4 w-24" />
                   </TableCell>
                 </TableRow>
@@ -280,7 +304,7 @@ const MyRequestsPage = () => {
             ) : requests.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No requests found matching your criteria.
@@ -315,6 +339,26 @@ const MyRequestsPage = () => {
                     >
                       {request.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {request.creator?.avatar ? (
+                        <img
+                          src={request.creator.avatar}
+                          alt={`${request.creator.firstName} ${request.creator.lastName}`}
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                          {getCreatorInitials(request.creator)}
+                        </div>
+                      )}
+                      <span className="text-foreground">
+                        {request.creator
+                          ? `${request.creator.firstName} ${request.creator.lastName}`
+                          : "Unknown"}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDistanceToNow(request.createdAt, { addSuffix: true })}
