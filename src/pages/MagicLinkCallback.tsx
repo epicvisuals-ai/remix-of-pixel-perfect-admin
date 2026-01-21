@@ -12,6 +12,7 @@ const MagicLinkCallback = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const hasConfirmed = useRef(false);
+  const conversationsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const confirmAuth = async () => {
@@ -51,15 +52,15 @@ const MagicLinkCallback = () => {
 
           setStatus('success');
 
-          // Call conversations endpoint after 30 seconds
-          setTimeout(async () => {
+          // Call conversations endpoint every 30 minutes
+          conversationsIntervalRef.current = setInterval(async () => {
             try {
               await messagingApi.getConversations();
-              console.log('Conversations endpoint called successfully after 30 seconds');
+              console.log('Conversations endpoint called successfully (30-minute interval)');
             } catch (error) {
-              console.error('Failed to fetch conversations after login timeout:', error);
+              console.error('Failed to fetch conversations on interval:', error);
             }
-          }, 30000);
+          }, 30 * 60 * 1000); // 30 minutes in milliseconds
 
           // Navigate based on onboarding status
           setTimeout(() => {
@@ -83,6 +84,13 @@ const MagicLinkCallback = () => {
     };
 
     confirmAuth();
+
+    // Cleanup interval on unmount
+    return () => {
+      if (conversationsIntervalRef.current) {
+        clearInterval(conversationsIntervalRef.current);
+      }
+    };
   }, [searchParams, navigate, setToken, setUser]);
 
   return (
