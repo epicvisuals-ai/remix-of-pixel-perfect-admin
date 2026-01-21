@@ -309,6 +309,34 @@ export interface DeclineRequestResponse {
   };
 }
 
+// Request Stats types
+export interface EarningsTrendItem {
+  month: string;
+  amount: number;
+}
+
+export interface JobsByStatus {
+  created: number;
+  submitted: number;
+  in_review: number;
+  in_progress: number;
+  approved: number;
+  rejected: number;
+}
+
+export interface RequestStatsData {
+  totalEarnings: number;
+  pendingEarnings: number;
+  completionRate: number;
+  jobsByStatus: JobsByStatus;
+  earningsTrend: EarningsTrendItem[];
+}
+
+export interface RequestStatsResponse {
+  success: boolean;
+  data: RequestStatsData;
+}
+
 // Creator Requests API functions
 export const creatorRequestsApi = {
   getRequests: (params?: {
@@ -333,4 +361,6 @@ export const creatorRequestsApi = {
     api.post<AcceptRequestResponse>(`/requests/${requestId}/accept`),
   declineRequest: (requestId: string) =>
     api.post<DeclineRequestResponse>(`/requests/${requestId}/decline`),
+  getRequestStats: () =>
+    api.get<RequestStatsResponse>('/creators/me/request-stats'),
 };
