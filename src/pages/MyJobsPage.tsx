@@ -160,7 +160,7 @@ const StatusTimeline = ({ status }: { status: Job["status"] }) => {
             <div className="flex flex-col items-center">
               <div
                 className={`
-                  w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
+                  w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 whitespace-nowrap
                   ${stepStatus === "completed" ? "bg-green-500 text-white" : ""}
                   ${stepStatus === "current" ? "bg-primary text-primary-foreground ring-4 ring-primary/20" : ""}
                   ${stepStatus === "upcoming" ? "bg-muted text-muted-foreground" : ""}
