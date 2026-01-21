@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGoogleLogin } from "@react-oauth/google";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Zap, ArrowRight } from "lucide-react";
@@ -10,8 +11,9 @@ import { useAuth } from "@/contexts/AuthContext";
 const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, setToken, setUser } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -23,7 +25,7 @@ const AuthPage = () => {
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    
+
     setIsLoading(true);
     try {
       await authApi.signin(email);
@@ -44,12 +46,49 @@ const AuthPage = () => {
     }
   };
 
-  const handleGoogleAuth = () => {
-    toast({
-      title: "Google Auth",
-      description: "Google authentication would be triggered here",
-    });
-  };
+  const handleGoogleAuth = useGoogleLogin({
+    onSuccess: async (codeResponse) => {
+      setIsGoogleLoading(true);
+      try {
+        const response = await authApi.googleLogin({ code: codeResponse.code });
+        const { access_token, user } = response.data;
+
+        // Store token and user info
+        setToken(access_token);
+        setUser(user);
+
+        // Navigate based on onboarding status
+        if (!user.onboarding_completed) {
+          navigate('/onboarding', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in with Google",
+        });
+      } catch (error: any) {
+        console.error('Google auth error:', error);
+        toast({
+          title: "Error",
+          description: error.response?.data?.detail || "Failed to sign in with Google. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Google login error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign in with Google. Please try again.",
+        variant: "destructive",
+      });
+    },
+    flow: 'auth-code',
+  });
 
   return (
     <div className="min-h-screen flex">
@@ -113,10 +152,11 @@ const AuthPage = () => {
           </div>
 
           {/* Google Auth */}
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full h-12 rounded-xl gap-2"
-            onClick={handleGoogleAuth}
+            onClick={() => handleGoogleAuth()}
+            disabled={isGoogleLoading}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -136,7 +176,7 @@ const AuthPage = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {isGoogleLoading ? "Signing in..." : "Continue with Google"}
           </Button>
 
           {/* Sign up link */}

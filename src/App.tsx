@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { MessagingProvider } from "@/contexts/MessagingContext";
@@ -38,15 +39,16 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <BrowserRouter>
-        <AuthProvider>
-          <NotificationProvider>
-            <FavoritesProvider>
-              <MessagingProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <BrowserRouter>
+          <AuthProvider>
+            <NotificationProvider>
+              <FavoritesProvider>
+                <MessagingProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
                   <Routes>
                     {/* Auth Routes (public) */}
                     <Route path="/auth" element={<AuthPage />} />
@@ -98,6 +100,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
+    </GoogleOAuthProvider>
   </QueryClientProvider>
 );
 

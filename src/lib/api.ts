@@ -50,15 +50,32 @@ export interface UserProfile {
   role: string | null;
 }
 
+// Google SSO types
+export interface GoogleSSORequest {
+  code?: string;
+  id_token?: string;
+}
+
+export interface AuthTokenResponse {
+  access_token: string;
+  token_type: string;
+  user: UserProfile;
+}
+
 // Auth API functions
 export const authApi = {
-  signin: (email: string) => 
+  signin: (email: string) =>
     axios.post(`${API_BASE_URL}/signin`, { email }, {
       headers: { 'Content-Type': 'application/json' }
     }),
-  
+
   confirmSignin: (email: string, token: string) =>
     axios.post(`${API_BASE_URL}/signin/confirm`, { email, token }, {
+      headers: { 'Content-Type': 'application/json' }
+    }),
+
+  googleLogin: (payload: GoogleSSORequest) =>
+    axios.post<AuthTokenResponse>(`${API_BASE_URL}/auth/google`, payload, {
       headers: { 'Content-Type': 'application/json' }
     }),
 };
