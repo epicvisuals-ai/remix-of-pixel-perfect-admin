@@ -153,7 +153,7 @@ export function MainSidebar({
               )}
             >
               <Briefcase className="h-5 w-5" />
-              <span>Jobs</span>
+              <span>Requests</span>
             </Button>
           )}
 
