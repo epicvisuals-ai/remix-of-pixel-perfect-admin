@@ -407,7 +407,7 @@ export interface NotificationsResponse {
 
 // Notifications API functions
 export const notificationsApi = {
-  getCount: () => api.get<NotificationCountResponse>('/notifications/count'),
+  getCount: () => api.get<NotificationCountResponse>('/notifications/count', { params: { is_read: 0 } }),
   getNotifications: () => api.get<NotificationsResponse>('/notifications'),
   markAllAsRead: () => api.post('/notifications/read'),
   markAsRead: (notificationId: string) => api.post<ApiNotification>(`/notifications/${notificationId}/read`),
