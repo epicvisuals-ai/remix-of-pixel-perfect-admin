@@ -101,7 +101,7 @@ export function MainSidebar({
       {/* Header with Logo */}
       <div className="flex items-center gap-3 px-4 py-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-          <span className="text-lg font-bold text-primary-foreground">L</span>
+          <span className="text-lg font-bold text-primary-foreground">EV</span>
         </div>
         <span className="text-base font-semibold text-foreground">Epic Visuals</span>
         <div className="ml-auto">
