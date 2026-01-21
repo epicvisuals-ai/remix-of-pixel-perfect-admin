@@ -208,8 +208,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [notifications]);
 
-  const clearAll = useCallback(() => {
-    setNotifications([]);
+  const clearAll = useCallback(async () => {
+    try {
+      await notificationsApi.clearAll();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Failed to clear all notifications:", error);
+    }
   }, []);
 
   const fetchNotifications = useCallback(async () => {

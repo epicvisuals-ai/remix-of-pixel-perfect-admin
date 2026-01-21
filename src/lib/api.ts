@@ -412,4 +412,5 @@ export const notificationsApi = {
   markAllAsRead: () => api.post('/notifications/read'),
   markAsRead: (notificationId: string) => api.post<ApiNotification>(`/notifications/${notificationId}/read`),
   deleteNotification: (notificationId: string) => api.delete<ApiNotification>(`/notifications/${notificationId}`),
+  clearAll: () => api.delete('/notifications'),
 };
