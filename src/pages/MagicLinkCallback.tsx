@@ -52,15 +52,15 @@ const MagicLinkCallback = () => {
 
           setStatus('success');
 
-          // Call conversations endpoint every 30 minutes
+          // Call conversations endpoint every 30 seconds
           conversationsIntervalRef.current = setInterval(async () => {
             try {
               await messagingApi.getConversations();
-              console.log('Conversations endpoint called successfully (30-minute interval)');
+              console.log('Conversations endpoint called successfully (30-second interval)');
             } catch (error) {
               console.error('Failed to fetch conversations on interval:', error);
             }
-          }, 30 * 60 * 1000); // 30 minutes in milliseconds
+          }, 30 * 1000); // 30 seconds in milliseconds
 
           // Navigate based on onboarding status
           setTimeout(() => {
