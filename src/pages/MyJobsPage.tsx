@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { DollarSign, Search, ArrowUpDown, Filter, TrendingUp, BarChart3 } from "lucide-react";
+import { DollarSign, Search, ArrowUpDown, Filter, TrendingUp, BarChart3, Image, Video } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -34,6 +34,28 @@ import { mapApiRequestToJob } from "@/lib/creatorRequestMapper";
 
 type SortOption = "date-desc" | "date-asc" | "budget-desc" | "budget-asc";
 type StatusFilter = "all" | Job["status"];
+
+const getStatusBadgeVariant = (status: Job["status"]) => {
+  switch (status) {
+    case "Submitted":
+      return "bg-blue-100 text-blue-700 hover:bg-blue-100";
+    case "In Progress":
+      return "bg-amber-100 text-amber-700 hover:bg-amber-100";
+    case "Approved":
+      return "bg-green-100 text-green-700 hover:bg-green-100";
+    case "Rejected":
+      return "bg-red-100 text-red-700 hover:bg-red-100";
+    default:
+      return "";
+  }
+};
+
+const TypeIcon = ({ type }: { type: Job["type"] }) => {
+  if (type === "Video") {
+    return <Video className="h-4 w-4 text-muted-foreground" />;
+  }
+  return <Image className="h-4 w-4 text-muted-foreground" />;
+};
 
 const MyJobsPage = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
