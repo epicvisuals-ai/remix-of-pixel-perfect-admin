@@ -8,7 +8,7 @@ import {
   mapRequestDetail,
   type ApiRequestDetail,
   type RequestDetail,
-} from "@/lib/requestDetail";
+} from "@/lib/requestDetailMapper";
 
 function RequestDetailSkeleton() {
   return (
