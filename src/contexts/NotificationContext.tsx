@@ -62,9 +62,10 @@ interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   addNotification: (notification: Omit<Notification, "id" | "createdAt" | "read">) => void;
-  markAsRead: (id: string) => void;
+  markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => void;
   clearNotification: (id: string) => void;
+  deleteNotification: (id: string) => Promise<void>;
   clearAll: () => void;
   fetchNotifications: () => Promise<void>;
   notificationPermission: NotificationPermission;
@@ -168,10 +169,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     [playSound, showNotification, isTabVisible, preferences]
   );
 
-  const markAsRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+  const markAsRead = useCallback(async (id: string) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
@@ -187,6 +194,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const clearNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
+
+  const deleteNotification = useCallback(async (id: string) => {
+    try {
+      await notificationsApi.deleteNotification(id);
+      const notification = notifications.find((n) => n.id === id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      if (notification && !notification.read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error("Failed to delete notification:", error);
+    }
+  }, [notifications]);
 
   const clearAll = useCallback(() => {
     setNotifications([]);
@@ -271,6 +291,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         markAsRead,
         markAllAsRead,
         clearNotification,
+        deleteNotification,
         clearAll,
         fetchNotifications,
         notificationPermission: permission,

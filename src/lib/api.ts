@@ -410,4 +410,6 @@ export const notificationsApi = {
   getCount: () => api.get<NotificationCountResponse>('/notifications/count'),
   getNotifications: () => api.get<NotificationsResponse>('/notifications'),
   markAllAsRead: () => api.post('/notifications/read'),
+  markAsRead: (notificationId: string) => api.post<ApiNotification>(`/notifications/${notificationId}/read`),
+  deleteNotification: (notificationId: string) => api.delete<ApiNotification>(`/notifications/${notificationId}`),
 };

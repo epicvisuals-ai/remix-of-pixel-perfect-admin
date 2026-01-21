@@ -44,6 +44,7 @@ export function NotificationBell() {
     markAsRead,
     markAllAsRead,
     clearNotification,
+    deleteNotification,
     clearAll,
     fetchNotifications,
     notificationPermission,
@@ -145,7 +146,7 @@ export function NotificationBell() {
                         <NotificationItem
                           key={notification.id}
                           notification={notification}
-                          onDismiss={() => clearNotification(notification.id)}
+                          onDismiss={() => deleteNotification(notification.id)}
                           onClick={() => handleNotificationClick(notification)}
                         />
                       ))}
