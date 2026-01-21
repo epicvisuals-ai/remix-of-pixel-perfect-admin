@@ -2,13 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RequestDetailsSheet } from "@/components/admin/RequestDetailsSheet";
-import api from "@/lib/api";
-import {
-  mapRequestDetail,
-  type ApiRequestDetail,
-  type RequestDetail,
-} from "@/lib/requestDetailMapper";
+import { JobDetailsSheet } from "@/components/creator/JobDetailsSheet";
+import { creatorRequestsApi } from "@/lib/api";
+import { mapApiRequestToJob, type Job } from "@/lib/creatorRequestMapper";
 
 function RequestDetailSkeleton() {
   return (
@@ -56,7 +52,7 @@ function RequestDetailSkeleton() {
 const MyJobDetailPage = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
-  const [request, setRequest] = useState<RequestDetail | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -71,13 +67,9 @@ const MyJobDetailPage = () => {
 
     const fetchRequest = async () => {
       try {
-        const response = await api.get(`/requests/${requestId}`, {
-          signal: controller.signal,
-        });
-        const payload = response.data;
-        const detail = (payload?.data ?? payload) as ApiRequestDetail | undefined;
-        if (isActive) {
-          setRequest(mapRequestDetail(requestId, detail));
+        const response = await creatorRequestsApi.getRequest(requestId, controller.signal);
+        if (isActive && response.data.success) {
+          setJob(mapApiRequestToJob(response.data.data));
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -85,7 +77,7 @@ const MyJobDetailPage = () => {
         }
         console.error("Failed to load job detail", error);
         if (isActive) {
-          setRequest(null);
+          setJob(null);
         }
       } finally {
         if (isActive) {
@@ -106,7 +98,7 @@ const MyJobDetailPage = () => {
     return <RequestDetailSkeleton />;
   }
 
-  if (!requestId || !request) {
+  if (!requestId || !job) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
         <div>
@@ -121,14 +113,41 @@ const MyJobDetailPage = () => {
   }
 
   return (
-    <RequestDetailsSheet
-      request={request}
+    <JobDetailsSheet
+      job={job}
       open
       onOpenChange={(open) => {
         if (!open) {
           navigate("/my-jobs");
         }
       }}
+      onStatusChange={(jobId, newStatus) =>
+        setJob((prev) => (prev?.id === jobId ? { ...prev, status: newStatus } : prev))
+      }
+      onAddDeliverable={(jobId, deliverable) =>
+        setJob((prev) =>
+          prev?.id === jobId
+            ? { ...prev, deliverables: [...prev.deliverables, deliverable] }
+            : prev
+        )
+      }
+      onRemoveDeliverable={(jobId, deliverableId) =>
+        setJob((prev) =>
+          prev?.id === jobId
+            ? {
+                ...prev,
+                deliverables: prev.deliverables.filter((deliverable) => deliverable.id !== deliverableId),
+              }
+            : prev
+        )
+      }
+      onAddMessage={(jobId, message) =>
+        setJob((prev) =>
+          prev?.id === jobId
+            ? { ...prev, messages: [...prev.messages, message] }
+            : prev
+        )
+      }
     />
   );
 };

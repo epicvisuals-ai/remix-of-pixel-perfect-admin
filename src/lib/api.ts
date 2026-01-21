@@ -374,6 +374,10 @@ export const creatorRequestsApi = {
         ...(params?.sortOrder && { sortOrder: params.sortOrder }),
       },
     }),
+  getRequest: (requestId: string, signal?: AbortSignal) =>
+    api.get<{ success: boolean; data: CreatorRequestItem }>(`/creator/requests/${requestId}`, {
+      ...(signal ? { signal } : {}),
+    }),
   acceptRequest: (requestId: string) =>
     api.post<AcceptRequestResponse>(`/requests/${requestId}/accept`),
   declineRequest: (requestId: string) =>
