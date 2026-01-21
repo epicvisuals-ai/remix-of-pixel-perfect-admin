@@ -292,8 +292,22 @@ export interface CreatorRequestsResponse {
 
 // Creator Requests API functions
 export const creatorRequestsApi = {
-  getRequests: (page = 1, limit = 20) =>
+  getRequests: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }) =>
     api.get<CreatorRequestsResponse>('/creator/requests', {
-      params: { page, limit },
+      params: {
+        page: params?.page || 1,
+        limit: params?.limit || 20,
+        ...(params?.status && { status: params.status }),
+        ...(params?.search && { search: params.search }),
+        ...(params?.sortBy && { sortBy: params.sortBy }),
+        ...(params?.sortOrder && { sortOrder: params.sortOrder }),
+      },
     }),
 };
