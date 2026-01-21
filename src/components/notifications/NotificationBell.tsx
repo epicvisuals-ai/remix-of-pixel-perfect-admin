@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { isToday, isYesterday, isThisWeek } from "date-fns";
-import { Bell, Check, Trash2, BellRing } from "lucide-react";
+import { Bell, Check, Trash2, BellRing, Settings2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useNotifications, Notification } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +11,6 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { NotificationPreferences } from "./NotificationPreferences";
 import { NotificationItem } from "./NotificationItem";
 
 type DateGroup = "today" | "yesterday" | "thisWeek" | "older";
@@ -120,7 +120,16 @@ export function NotificationBell() {
             )}
           </div>
           <div className="flex items-center gap-1">
-            <NotificationPreferences />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              asChild
+            >
+              <Link to="/settings/notifications">
+                <Settings2 className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </div>
 
