@@ -765,8 +765,8 @@ const MyJobsPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">My Jobs</h1>
-        <p className="text-muted-foreground">Jobs assigned to you</p>
+        <h1 className="text-2xl font-bold text-foreground">My Requests</h1>
+        <p className="text-muted-foreground">Track and manage requests assigned to you</p>
       </div>
 
       {/* Analytics Dashboard */}
