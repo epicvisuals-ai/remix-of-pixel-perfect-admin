@@ -11,7 +11,7 @@ import { FavoriteButton } from "@/components/creators/FavoriteButton";
 import { ReviewCard } from "@/components/creators/ReviewCard";
 import { RequestQuoteModal } from "@/components/creators/RequestQuoteModal";
 import PortfolioPreviewModal, { PortfolioItem } from "@/components/creators/PortfolioPreviewModal";
-import { useMessaging } from "@/contexts/MessagingContext";
+import MessagePopup from "@/components/projects/MessagePopup";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { creatorsApi } from "@/lib/api";
 
@@ -305,12 +305,12 @@ const defaultCreator = {
 export default function CreatorProfilePage() {
   const { creatorId } = useParams<{ creatorId: string }>();
   const navigate = useNavigate();
-  const { startConversation } = useMessaging();
   const { setFavorites } = useFavorites();
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [portfolioPreviewOpen, setPortfolioPreviewOpen] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
+  const [messagePopupOpen, setMessagePopupOpen] = useState(false);
 
   const { data: creatorResponse, isLoading, error } = useQuery({
     queryKey: ['creator', creatorId],
@@ -451,7 +451,7 @@ export default function CreatorProfilePage() {
             variant="outline" 
             size="sm" 
             className="gap-2"
-            onClick={() => startConversation(creator.id, creator.name, creator.avatar)}
+            onClick={() => setMessagePopupOpen(true)}
           >
             <MessageCircle className="h-4 w-4" />
             Message
@@ -597,6 +597,16 @@ export default function CreatorProfilePage() {
           imageUrl: item.image,
         }))}
         onNavigate={(item) => setSelectedPortfolioItem(item)}
+      />
+
+      <MessagePopup
+        open={messagePopupOpen}
+        onOpenChange={setMessagePopupOpen}
+        creator={{
+          id: creator.userId,
+          name: creator.name,
+          avatar: creator.avatar,
+        }}
       />
     </div>
   );

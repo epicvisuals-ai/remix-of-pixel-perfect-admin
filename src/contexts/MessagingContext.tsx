@@ -42,6 +42,7 @@ interface MessagingContextType {
   setActiveConversation: (id: string | null) => void;
   sendMessage: (content: string, attachments?: Attachment[]) => void;
   startConversation: (participantId: string, participantName: string, participantAvatar: string, initialMessage?: string) => Promise<string | null>;
+  findOrCreateConversation: (participantId: string, participantName: string, participantAvatar: string) => Promise<{ conversationId: string | null; isNew: boolean }>;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   setUserTyping: (isTyping: boolean) => void;
@@ -274,13 +275,57 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     // In a real app, this would emit to the server via WebSocket
   }, []);
 
+  // Find or create a conversation with a participant via API
+  const findOrCreateConversation = useCallback(async (
+    participantId: string,
+    participantName: string,
+    participantAvatar: string
+  ): Promise<{ conversationId: string | null; isNew: boolean }> => {
+    try {
+      // First, check via API if a conversation already exists
+      const response = await messagingApi.getConversations({});
+      const existingConv = response.data.data.find((c) => c.participant.id === participantId);
+      
+      if (existingConv) {
+        // Update local state with fetched conversations
+        const mappedConversations = response.data.data.map(mapApiConversation);
+        setConversations(mappedConversations);
+        return { conversationId: existingConv.id, isNew: false };
+      }
+      
+      // No existing conversation, create a new one
+      const createResponse = await messagingApi.createConversation({
+        participantId,
+        initialMessage: "Hi! I'd love to discuss a potential project with you.",
+      });
+
+      const newConversation: Conversation = {
+        id: createResponse.data.data.id,
+        participantId,
+        participantName: `${createResponse.data.data.participant.firstName} ${createResponse.data.data.participant.lastName}`.trim() || participantName,
+        participantAvatar: participantAvatar,
+        lastMessage: "Hi! I'd love to discuss a potential project with you.",
+        lastMessageTime: new Date(createResponse.data.data.createdAt),
+        unreadCount: 0,
+        isTyping: false,
+      };
+
+      setConversations((prev) => [newConversation, ...prev]);
+      return { conversationId: newConversation.id, isNew: true };
+    } catch (error) {
+      console.error("Failed to find or create conversation:", error);
+      toast.error("Failed to start conversation");
+      return { conversationId: null, isNew: false };
+    }
+  }, []);
+
   const startConversation = useCallback(async (
     participantId: string, 
     participantName: string, 
     participantAvatar: string,
     initialMessage?: string
   ): Promise<string | null> => {
-    // Check if conversation already exists
+    // Check if conversation already exists locally first
     const existingConv = conversations.find((c) => c.participantId === participantId);
     if (existingConv) {
       setActiveConversation(existingConv.id);
@@ -326,6 +371,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         setActiveConversation,
         sendMessage,
         startConversation,
+        findOrCreateConversation,
         isOpen,
         setIsOpen,
         setUserTyping,
