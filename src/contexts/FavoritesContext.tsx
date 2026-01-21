@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { favoritesApi, creatorsApi } from "@/lib/api";
 import { toast } from "sonner";
 
 interface FavoritesContextType {
   favorites: string[];
-  setFavorites: (favorites: string[]) => void;
+  setFavorites: React.Dispatch<React.SetStateAction<string[]>>;
   toggleFavorite: (creatorId: string, creatorData?: any, onSuccess?: (creatorId: string, wasFavorite: boolean, creatorData?: any) => void) => Promise<void>;
   isFavorite: (creatorId: string) => boolean;
   isToggling: string | null;
