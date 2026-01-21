@@ -243,7 +243,7 @@ export function MainSidebar({
                 <Palette className="h-5 w-5" />
                 <span>Creators</span>
               </Button>
-              <Button
+              {/* <Button
                 variant={isProjectsActive ? "sidebarActive" : "sidebar"}
                 size="sidebar"
                 onClick={() => handleNavClick("/projects")}
@@ -254,7 +254,7 @@ export function MainSidebar({
               >
                 <FolderKanban className="h-5 w-5" />
                 <span>Projects</span>
-              </Button>
+              </Button> */}
             </>
           )}
 
