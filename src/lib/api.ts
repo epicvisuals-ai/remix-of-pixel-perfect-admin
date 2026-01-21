@@ -364,7 +364,7 @@ export const creatorRequestsApi = {
     sortBy?: string;
     sortOrder?: string;
   }) =>
-    api.get<CreatorRequestsResponse>('/requests', {
+    api.get<CreatorRequestsResponse>('/creator/requests', {
       params: {
         page: params?.page || 1,
         limit: params?.limit || 20,
