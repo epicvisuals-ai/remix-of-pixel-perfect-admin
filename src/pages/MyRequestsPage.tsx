@@ -102,12 +102,12 @@ const TypeIcon = ({ type }: { type: Request["contentType"] }) => {
 
 const getCreatorInitials = (creator: Request["creator"]) => {
   if (!creator) {
-    return "?";
+    return "–";
   }
   const firstInitial = creator.firstName?.trim().charAt(0) ?? "";
   const lastInitial = creator.lastName?.trim().charAt(0) ?? "";
   const initials = `${firstInitial}${lastInitial}`.toUpperCase();
-  return initials || "?";
+  return initials || "–";
 };
 
 type SortOption = "date-desc" | "date-asc" | "budget-desc" | "budget-asc";
@@ -353,10 +353,16 @@ const MyRequestsPage = () => {
                           {getCreatorInitials(request.creator)}
                         </div>
                       )}
-                      <span className="text-foreground">
+                      <span
+                        className={
+                          request.creator
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }
+                      >
                         {request.creator
                           ? `${request.creator.firstName} ${request.creator.lastName}`
-                          : "Unknown"}
+                          : "Not assigned"}
                       </span>
                     </div>
                   </TableCell>
