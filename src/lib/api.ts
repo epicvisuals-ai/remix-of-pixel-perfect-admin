@@ -414,3 +414,50 @@ export const notificationsApi = {
   deleteNotification: (notificationId: string) => api.delete<ApiNotification>(`/notifications/${notificationId}`),
   clearAll: () => api.delete('/notifications'),
 };
+
+// Notification Preferences types
+export interface ApiNotificationPreferences {
+  inAppEnabled: boolean;
+  emailDigestEnabled: boolean;
+  emailDigestFrequency: "instant" | "hourly" | "daily" | "weekly";
+  soundEnabled: boolean;
+  browserNotificationsEnabled: boolean;
+  notifyMessages: boolean;
+  notifyStatusChanges: boolean;
+  notifyAssignments: boolean;
+  notifySystem: boolean;
+}
+
+export interface NotificationPreferencesResponse {
+  success: boolean;
+  data: ApiNotificationPreferences;
+}
+
+export interface UpdateNotificationPreferencesRequest {
+  inAppEnabled?: boolean;
+  emailDigestEnabled?: boolean;
+  emailDigestFrequency?: "instant" | "hourly" | "daily" | "weekly";
+  soundEnabled?: boolean;
+  browserNotificationsEnabled?: boolean;
+  notifyMessages?: boolean;
+  notifyStatusChanges?: boolean;
+  notifyAssignments?: boolean;
+  notifySystem?: boolean;
+}
+
+export interface UpdateNotificationPreferencesResponse {
+  success: boolean;
+  data: {
+    soundEnabled?: boolean;
+    emailDigestEnabled?: boolean;
+    emailDigestFrequency?: "instant" | "hourly" | "daily" | "weekly";
+    updatedAt: string;
+  };
+}
+
+// Notification Preferences API functions
+export const notificationPreferencesApi = {
+  getPreferences: () => api.get<NotificationPreferencesResponse>('/notifications/preferences'),
+  updatePreferences: (data: UpdateNotificationPreferencesRequest) =>
+    api.patch<UpdateNotificationPreferencesResponse>('/notifications/preferences', data),
+};
