@@ -3,6 +3,7 @@ import api from './api';
 // API Response Types
 export interface ConversationParticipant {
   userId: string;
+  creatorId: string | null;
   unreadCount: number;
   lastReadAt: string | null;
   joinedAt: string;
