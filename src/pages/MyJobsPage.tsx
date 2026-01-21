@@ -929,7 +929,7 @@ const MyJobsPage = () => {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-muted-foreground">ID</TableHead>
+              {/* <TableHead className="text-muted-foreground">ID</TableHead> */}
               <TableHead className="text-muted-foreground">Company</TableHead>
               <TableHead className="text-muted-foreground">Type</TableHead>
               <TableHead className="text-muted-foreground">Budget</TableHead>
@@ -940,19 +940,19 @@ const MyJobsPage = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                   Loading requests...
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   <div className="text-red-600 dark:text-red-400">{error}</div>
                 </TableCell>
               </TableRow>
             ) : filteredAndSortedJobs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                   No jobs found matching your criteria.
                 </TableCell>
               </TableRow>
@@ -963,9 +963,9 @@ const MyJobsPage = () => {
                   className="hover:bg-muted/50 cursor-pointer"
                   onClick={() => setSelectedJob(job)}
                 >
-                  <TableCell className="font-medium text-foreground">
+                  {/* <TableCell className="font-medium text-foreground">
                     {job.id}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell className="text-foreground">{job.company}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
