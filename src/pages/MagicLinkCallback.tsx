@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi, userApi } from '@/lib/api';
-import { messagingApi } from '@/lib/messaging-api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
@@ -12,7 +11,6 @@ const MagicLinkCallback = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const hasConfirmed = useRef(false);
-  const conversationsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const confirmAuth = async () => {
@@ -52,16 +50,6 @@ const MagicLinkCallback = () => {
 
           setStatus('success');
 
-          // Call conversations endpoint every 30 seconds
-          conversationsIntervalRef.current = setInterval(async () => {
-            try {
-              await messagingApi.getConversations();
-              console.log('Conversations endpoint called successfully (30-second interval)');
-            } catch (error) {
-              console.error('Failed to fetch conversations on interval:', error);
-            }
-          }, 30 * 1000); // 30 seconds in milliseconds
-
           // Navigate based on onboarding status
           setTimeout(() => {
             if (!userProfile.onboarding_completed) {
@@ -84,13 +72,6 @@ const MagicLinkCallback = () => {
     };
 
     confirmAuth();
-
-    // Cleanup interval on unmount
-    return () => {
-      if (conversationsIntervalRef.current) {
-        clearInterval(conversationsIntervalRef.current);
-      }
-    };
   }, [searchParams, navigate, setToken, setUser]);
 
   return (

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from "react";
 import { Attachment } from "@/components/messaging/MessageAttachment";
 import { 
   messagingApi, 
@@ -8,6 +8,7 @@ import {
   MessagesResponse 
 } from "@/lib/messaging-api";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type MessageStatus = "sending" | "sent" | "delivered" | "read";
 
@@ -119,6 +120,7 @@ function mapApiMessage(apiMsg: ApiMessage, conversationId: string): Message {
 }
 
 export function MessagingProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [allMessages, setAllMessages] = useState<Record<string, Message[]>>({});
   const [activeConversation, setActiveConversationState] = useState<string | null>(null);
@@ -127,6 +129,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageMeta, setMessageMeta] = useState<Record<string, { page: number; total: number }>>({});
+  const conversationsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const messages = activeConversation ? allMessages[activeConversation] || [] : [];
   const activeConv = conversations.find((c) => c.id === activeConversation);
@@ -178,15 +181,36 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Refresh conversations
+  const refreshConversations = useCallback(async () => {
+    await fetchConversations(searchQuery || undefined);
+  }, [fetchConversations, searchQuery]);
+
   // Initial fetch
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
 
-  // Refresh conversations
-  const refreshConversations = useCallback(async () => {
-    await fetchConversations(searchQuery || undefined);
-  }, [fetchConversations, searchQuery]);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      if (conversationsIntervalRef.current) {
+        clearInterval(conversationsIntervalRef.current);
+        conversationsIntervalRef.current = null;
+      }
+      return;
+    }
+
+    conversationsIntervalRef.current = setInterval(() => {
+      void refreshConversations();
+    }, 30 * 1000);
+
+    return () => {
+      if (conversationsIntervalRef.current) {
+        clearInterval(conversationsIntervalRef.current);
+        conversationsIntervalRef.current = null;
+      }
+    };
+  }, [isAuthenticated, refreshConversations]);
 
   // Search conversations
   const searchConversations = useCallback((query: string) => {
