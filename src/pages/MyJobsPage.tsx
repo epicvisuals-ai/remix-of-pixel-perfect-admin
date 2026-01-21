@@ -212,10 +212,10 @@ interface JobDetailsSheetProps {
   onAddMessage: (jobId: string, message: Message) => void;
 }
 
-const JobDetailsSheet = ({ 
-  job, 
-  open, 
-  onOpenChange, 
+const JobDetailsSheet = ({
+  job,
+  open,
+  onOpenChange,
   onStatusChange,
   onAddDeliverable,
   onRemoveDeliverable,
@@ -223,6 +223,8 @@ const JobDetailsSheet = ({
 }: JobDetailsSheetProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [isDeclining, setIsDeclining] = useState(false);
 
   if (!job) return null;
 
@@ -249,15 +251,37 @@ const JobDetailsSheet = ({
     }
   };
 
-  const handleAccept = () => {
-    onStatusChange(job.id, "In Progress");
-    toast.success("Job accepted! Status changed to In Progress.");
+  const handleAccept = async () => {
+    setIsAccepting(true);
+    try {
+      const response = await creatorRequestsApi.acceptRequest(job.id);
+      if (response.data.success) {
+        onStatusChange(job.id, "In Progress");
+        toast.success("Job accepted! Status changed to In Progress.");
+      }
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      toast.error("Failed to accept job. Please try again.");
+    } finally {
+      setIsAccepting(false);
+    }
   };
 
-  const handleDecline = () => {
-    onStatusChange(job.id, "Rejected");
-    toast.info("Job declined.");
-    onOpenChange(false);
+  const handleDecline = async () => {
+    setIsDeclining(true);
+    try {
+      const response = await creatorRequestsApi.declineRequest(job.id);
+      if (response.data.success) {
+        onStatusChange(job.id, "Rejected");
+        toast.info("Job declined.");
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Error declining request:", error);
+      toast.error("Failed to decline job. Please try again.");
+    } finally {
+      setIsDeclining(false);
+    }
   };
 
   const handleSubmitDeliverable = () => {
@@ -534,13 +558,22 @@ const JobDetailsSheet = ({
           <div className="space-y-3">
             {job.status === "Submitted" && (
               <div className="flex gap-3">
-                <Button onClick={handleAccept} className="flex-1">
+                <Button
+                  onClick={handleAccept}
+                  className="flex-1"
+                  disabled={isAccepting || isDeclining}
+                >
                   <Check className="h-4 w-4 mr-2" />
-                  Accept Job
+                  {isAccepting ? "Accepting..." : "Accept Job"}
                 </Button>
-                <Button variant="outline" onClick={handleDecline} className="flex-1">
+                <Button
+                  variant="outline"
+                  onClick={handleDecline}
+                  className="flex-1"
+                  disabled={isAccepting || isDeclining}
+                >
                   <X className="h-4 w-4 mr-2" />
-                  Decline
+                  {isDeclining ? "Declining..." : "Decline"}
                 </Button>
               </div>
             )}

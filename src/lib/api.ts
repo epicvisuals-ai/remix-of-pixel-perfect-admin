@@ -290,6 +290,25 @@ export interface CreatorRequestsResponse {
   };
 }
 
+// Accept/Decline Request Response types
+export interface AcceptRequestResponse {
+  success: boolean;
+  data: {
+    id: string;
+    status: string;
+    statusChangedAt: string;
+  };
+}
+
+export interface DeclineRequestResponse {
+  success: boolean;
+  data: {
+    id: string;
+    status: string;
+    statusChangedAt: string;
+  };
+}
+
 // Creator Requests API functions
 export const creatorRequestsApi = {
   getRequests: (params?: {
@@ -310,4 +329,8 @@ export const creatorRequestsApi = {
         ...(params?.sortOrder && { sortOrder: params.sortOrder }),
       },
     }),
+  acceptRequest: (requestId: string) =>
+    api.post<AcceptRequestResponse>(`/requests/${requestId}/accept`),
+  declineRequest: (requestId: string) =>
+    api.post<DeclineRequestResponse>(`/requests/${requestId}/decline`),
 };
