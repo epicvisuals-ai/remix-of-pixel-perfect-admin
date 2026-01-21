@@ -59,14 +59,38 @@ const MessagingContext = createContext<MessagingContextType | undefined>(undefin
 
 // Map API conversation to local format
 function mapApiConversation(apiConv: ApiConversation): Conversation {
+  // Determine current user's ID from last message
+  let currentUserId: string | null = null;
+  if (apiConv.lastMessage) {
+    if (apiConv.lastMessage.isOwn) {
+      // If message is own, sender is current user
+      currentUserId = apiConv.lastMessage.sender.id;
+    } else {
+      // If message is not own, sender is the other participant
+      currentUserId = apiConv.participants.find(p => p.userId !== apiConv.lastMessage!.sender.id)?.userId || null;
+    }
+  }
+
+  // If we can't determine from last message, assume first participant is current user (fallback)
+  if (!currentUserId && apiConv.participants.length > 0) {
+    currentUserId = apiConv.participants[0].userId;
+  }
+
+  // Find the other participant (not current user) to display in conversation list
+  const otherParticipant = apiConv.participants.find(p => p.userId !== currentUserId);
+  const currentUserParticipant = apiConv.participants.find(p => p.userId === currentUserId);
+
+  // Fallback to first participant if can't determine
+  const displayParticipant = otherParticipant || apiConv.participants[0];
+
   return {
     id: apiConv.id,
-    participantId: apiConv.participant.id,
-    participantName: `${apiConv.participant.firstName} ${apiConv.participant.lastName}`.trim(),
-    participantAvatar: apiConv.participant.avatar || "",
+    participantId: displayParticipant.userId,
+    participantName: displayParticipant.name,
+    participantAvatar: displayParticipant.avatar || "",
     lastMessage: apiConv.lastMessage?.content || "",
     lastMessageTime: apiConv.lastMessage ? new Date(apiConv.lastMessage.sentAt) : new Date(),
-    unreadCount: apiConv.unreadCount,
+    unreadCount: currentUserParticipant?.unreadCount || 0,
     isTyping: false,
   };
 }
@@ -77,7 +101,7 @@ function mapApiMessage(apiMsg: ApiMessage, conversationId: string): Message {
     id: apiMsg.id,
     conversationId,
     senderId: apiMsg.sender.id,
-    senderName: apiMsg.sender.firstName,
+    senderName: `${apiMsg.sender.firstName} ${apiMsg.sender.lastName || ''}`.trim(),
     senderAvatar: apiMsg.sender.avatar || "",
     content: apiMsg.content,
     timestamp: new Date(apiMsg.sentAt),
@@ -284,8 +308,10 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     try {
       // First, check via API if a conversation already exists
       const response = await messagingApi.getConversations({});
-      const existingConv = response.data.data.find((c) => c.participant.id === participantId);
-      
+      const existingConv = response.data.data.find((c) =>
+        c.participants.some(p => p.userId === participantId)
+      );
+
       if (existingConv) {
         // Update local state with fetched conversations
         const mappedConversations = response.data.data.map(mapApiConversation);
@@ -299,16 +325,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         initialMessage: "Hi! I'd love to discuss a potential project with you.",
       });
 
-      const newConversation: Conversation = {
-        id: createResponse.data.data.id,
-        participantId,
-        participantName: `${createResponse.data.data.participant.firstName} ${createResponse.data.data.participant.lastName}`.trim() || participantName,
-        participantAvatar: participantAvatar,
-        lastMessage: "Hi! I'd love to discuss a potential project with you.",
-        lastMessageTime: new Date(createResponse.data.data.createdAt),
-        unreadCount: 0,
-        isTyping: false,
-      };
+      const newConversation = mapApiConversation(createResponse.data.data);
 
       setConversations((prev) => [newConversation, ...prev]);
       return { conversationId: newConversation.id, isNew: true };
@@ -340,16 +357,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         initialMessage: initialMessage || "Hi! I'd love to discuss a potential project with you.",
       });
 
-      const newConversation: Conversation = {
-        id: response.data.data.id,
-        participantId,
-        participantName: `${response.data.data.participant.firstName} ${response.data.data.participant.lastName}`.trim() || participantName,
-        participantAvatar: participantAvatar,
-        lastMessage: initialMessage || "Hi! I'd love to discuss a potential project with you.",
-        lastMessageTime: new Date(response.data.data.createdAt),
-        unreadCount: 0,
-        isTyping: false,
-      };
+      const newConversation = mapApiConversation(response.data.data);
 
       setConversations((prev) => [newConversation, ...prev]);
       setActiveConversation(newConversation.id);

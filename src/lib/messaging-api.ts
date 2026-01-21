@@ -2,6 +2,16 @@ import api from './api';
 
 // API Response Types
 export interface ConversationParticipant {
+  userId: string;
+  unreadCount: number;
+  lastReadAt: string | null;
+  joinedAt: string;
+  avatar: string | null;
+  name: string;
+  leftAt: string | null;
+}
+
+export interface MessageSender {
   id: string;
   firstName: string;
   lastName: string;
@@ -9,16 +19,20 @@ export interface ConversationParticipant {
 }
 
 export interface ConversationLastMessage {
+  id: string;
   content: string;
   sentAt: string;
   isOwn: boolean;
+  sender: MessageSender;
+  attachments: any[];
 }
 
 export interface ApiConversation {
   id: string;
-  participant: ConversationParticipant;
+  createdAt: string;
+  updatedAt: string;
+  participants: ConversationParticipant[];
   lastMessage: ConversationLastMessage | null;
-  unreadCount: number;
 }
 
 export interface ConversationsResponse {
@@ -38,18 +52,9 @@ export interface CreateConversationRequest {
 
 export interface CreateConversationResponse {
   success: boolean;
-  data: {
-    id: string;
-    participant: ConversationParticipant;
-    createdAt: string;
-  };
+  data: ApiConversation;
 }
 
-export interface MessageSender {
-  id: string;
-  firstName: string;
-  avatar: string | null;
-}
 
 export interface MessageAttachment {
   id: string;
