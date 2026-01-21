@@ -586,68 +586,89 @@ const MyJobsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch creator requests on mount
+  // Fetch creator requests with filters
   useEffect(() => {
+    let isActive = true;
+    const controller = new AbortController();
+
     const fetchRequests = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await creatorRequestsApi.getRequests();
 
-        if (response.data.success) {
+        // Build params object
+        const params: {
+          page?: number;
+          limit?: number;
+          status?: string;
+          search?: string;
+          sortBy?: string;
+          sortOrder?: string;
+        } = {};
+
+        // Status filter
+        if (statusFilter !== "all") {
+          // Convert display status to API format (lowercase with underscores)
+          const statusMap: Record<string, string> = {
+            'Submitted': 'submitted',
+            'In Progress': 'in_progress',
+            'Approved': 'approved',
+            'Rejected': 'rejected',
+          };
+          params.status = statusMap[statusFilter] || statusFilter.toLowerCase();
+        }
+
+        // Search filter
+        if (searchQuery.trim()) {
+          params.search = searchQuery.trim();
+        }
+
+        // Sort options
+        const sortMap: Record<SortOption, { sortBy: string; sortOrder: string }> = {
+          "date-desc": { sortBy: "createdAt", sortOrder: "desc" },
+          "date-asc": { sortBy: "createdAt", sortOrder: "asc" },
+          "budget-desc": { sortBy: "budget", sortOrder: "desc" },
+          "budget-asc": { sortBy: "budget", sortOrder: "asc" },
+        };
+
+        const { sortBy, sortOrder } = sortMap[sortOption];
+        params.sortBy = sortBy;
+        params.sortOrder = sortOrder;
+
+        const response = await creatorRequestsApi.getRequests(params);
+
+        if (isActive && response.data.success) {
           const mappedJobs = response.data.data.map(mapApiRequestToJob);
           setJobs(mappedJobs);
-        } else {
+        } else if (isActive) {
           setError("Failed to load requests");
         }
       } catch (err) {
-        console.error("Error fetching creator requests:", err);
-        setError("Failed to load requests. Please try again later.");
-        toast.error("Failed to load requests");
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+        if (isActive) {
+          console.error("Error fetching creator requests:", err);
+          setError("Failed to load requests. Please try again later.");
+          toast.error("Failed to load requests");
+        }
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchRequests();
-  }, []);
 
-  const filteredAndSortedJobs = useMemo(() => {
-    let result = [...jobs];
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [searchQuery, sortOption, statusFilter]);
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (job) =>
-          job.id.toLowerCase().includes(query) ||
-          job.company.toLowerCase().includes(query)
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== "all") {
-      result = result.filter((job) => job.status === statusFilter);
-    }
-
-    // Sorting
-    result.sort((a, b) => {
-      switch (sortOption) {
-        case "date-desc":
-          return b.createdAt.getTime() - a.createdAt.getTime();
-        case "date-asc":
-          return a.createdAt.getTime() - b.createdAt.getTime();
-        case "budget-desc":
-          return b.budget - a.budget;
-        case "budget-asc":
-          return a.budget - b.budget;
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  }, [jobs, searchQuery, statusFilter, sortOption]);
+  // Jobs are now filtered and sorted on the server, so we can use them directly
+  const filteredAndSortedJobs = jobs;
 
   const handleStatusChange = (jobId: string, newStatus: Job["status"]) => {
     setJobs((prev) =>
