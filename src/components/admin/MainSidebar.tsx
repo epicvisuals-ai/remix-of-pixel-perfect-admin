@@ -103,7 +103,7 @@ export function MainSidebar({
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
           <span className="text-lg font-bold text-primary-foreground">L</span>
         </div>
-        <span className="text-base font-semibold text-foreground">Lovable</span>
+        <span className="text-base font-semibold text-foreground">Epic Visuals</span>
         <div className="ml-auto">
           {onToggleSidebar ? (
             <Button
