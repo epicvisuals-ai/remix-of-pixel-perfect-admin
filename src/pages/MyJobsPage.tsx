@@ -338,9 +338,9 @@ const JobDetailsSheet = ({
           </p>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-6 space-y-5">
           {/* Status Timeline */}
-          <Card>
+          <Card className="rounded-2xl border border-border/60 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Status Timeline</CardTitle>
             </CardHeader>
@@ -357,7 +357,7 @@ const JobDetailsSheet = ({
           </Card>
 
           {/* Brief Card */}
-          <Card>
+          <Card className="rounded-2xl border border-border/60 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -372,7 +372,7 @@ const JobDetailsSheet = ({
           </Card>
 
           {/* Job Details Card */}
-          <Card>
+          <Card className="rounded-2xl border border-border/60 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Job Details</CardTitle>
             </CardHeader>
@@ -410,18 +410,21 @@ const JobDetailsSheet = ({
 
           {/* Deliverables Upload Card - Show for In Progress and Approved */}
           {(job.status === "In Progress" || job.status === "Approved") && (
-            <Card>
+            <Card className="rounded-2xl border border-border/60 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Upload className="h-4 w-4" />
                   Deliverables
                 </CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Upload your final files before submitting for review.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Upload Area - Only show for In Progress */}
                 {job.status === "In Progress" && (
                   <div
-                    className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    className="border-2 border-dashed border-primary/30 rounded-2xl p-6 text-center cursor-pointer bg-muted/30 hover:border-primary/60 hover:bg-muted/40 transition-colors"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <input
@@ -432,12 +435,14 @@ const JobDetailsSheet = ({
                       onChange={handleFileUpload}
                       accept="image/*,video/*,.pdf,.zip,.psd,.ai,.fig"
                     />
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm font-medium text-foreground">
-                      Click to upload files
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-foreground">
+                      Drag and drop or click to upload
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Images, videos, PDFs, or design files
+                      MP4, MOV, JPG, PNG, PDF, or design files
                     </p>
                   </div>
                 )}
@@ -448,7 +453,7 @@ const JobDetailsSheet = ({
                     {job.deliverables.map((deliverable) => (
                       <div
                         key={deliverable.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -486,7 +491,7 @@ const JobDetailsSheet = ({
           )}
 
           {/* Messages Card */}
-          <Card>
+          <Card className="rounded-2xl border border-border/60 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />
@@ -522,8 +527,8 @@ const JobDetailsSheet = ({
                           <div
                             className={`inline-block rounded-lg px-3 py-2 text-sm ${
                               message.authorType === "creator"
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
+                                ? "bg-primary text-primary-foreground rounded-br-sm"
+                                : "bg-muted text-foreground rounded-bl-sm"
                             }`}
                           >
                             {message.content}
@@ -556,6 +561,13 @@ const JobDetailsSheet = ({
             </CardContent>
           </Card>
 
+          {job.status === "In Progress" && (
+            <Button onClick={handleSubmitDeliverable} className="w-full rounded-xl">
+              <Upload className="h-4 w-4 mr-2" />
+              Submit Deliverable
+            </Button>
+          )}
+
           {/* Action Buttons */}
           <div className="space-y-3">
             {job.status === "Submitted" && (
@@ -580,15 +592,8 @@ const JobDetailsSheet = ({
               </div>
             )}
 
-            {job.status === "In Progress" && (
-              <Button onClick={handleSubmitDeliverable} className="w-full">
-                <Upload className="h-4 w-4 mr-2" />
-                Submit Deliverable
-              </Button>
-            )}
-
             {job.status === "Approved" && (
-              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-4 text-center">
+              <div className="rounded-xl bg-green-50 dark:bg-green-950/30 p-4 text-center">
                 <p className="text-sm text-green-700 dark:text-green-400 font-medium">
                   ✓ This job has been completed
                 </p>
@@ -596,7 +601,7 @@ const JobDetailsSheet = ({
             )}
 
             {job.status === "Rejected" && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-950/30 p-4 text-center">
+              <div className="rounded-xl bg-red-50 dark:bg-red-950/30 p-4 text-center">
                 <p className="text-sm text-red-700 dark:text-red-400 font-medium">
                   This job was declined
                 </p>
