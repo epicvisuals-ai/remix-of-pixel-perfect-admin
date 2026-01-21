@@ -38,17 +38,26 @@ const getDateGroup = (date: Date): DateGroup => {
 
 
 export function NotificationBell() {
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    markAllAsRead, 
-    clearNotification, 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotification,
     clearAll,
+    fetchNotifications,
     notificationPermission,
     requestNotificationPermission,
   } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    // Fetch latest notifications when opening the popover
+    if (open) {
+      fetchNotifications();
+    }
+  };
 
   const groupedNotifications = useMemo(() => {
     const groups: GroupedNotifications = {
@@ -84,7 +93,7 @@ export function NotificationBell() {
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"

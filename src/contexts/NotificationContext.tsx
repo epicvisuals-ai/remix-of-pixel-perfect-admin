@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { toast } from "sonner";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
+import { notificationsApi, ApiNotification } from "@/lib/api";
 
 export interface Notification {
   id: string;
@@ -65,6 +66,7 @@ interface NotificationContextType {
   markAllAsRead: () => void;
   clearNotification: (id: string) => void;
   clearAll: () => void;
+  fetchNotifications: () => Promise<void>;
   notificationPermission: NotificationPermission;
   requestNotificationPermission: () => Promise<boolean>;
   preferences: NotificationPreferences;
@@ -73,55 +75,40 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-// Mock initial notifications
-const mockNotifications: Notification[] = [
-  {
-    id: "notif-1",
-    type: "message",
-    title: "New message from Alex Morgan",
-    description: "Here are the initial concepts. Let me know your thoughts!",
-    createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-    read: false,
-    requestId: "req-003",
-    creatorName: "Alex Morgan",
-  },
-  {
-    id: "notif-2",
-    type: "status_change",
-    title: "Request status updated",
-    description: "Request #req-003 is now In Progress",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    read: false,
-    requestId: "req-003",
-  },
-  {
-    id: "notif-3",
-    type: "assignment",
-    title: "Creator assigned",
-    description: "Alex Morgan has been assigned to request #req-003",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-    read: true,
-    requestId: "req-003",
-    creatorName: "Alex Morgan",
-  },
-  {
-    id: "notif-4",
-    type: "status_change",
-    title: "Request approved",
-    description: "Request #req-004 has been approved",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-    requestId: "req-004",
-  },
-];
+// Map API notification type to UI notification type
+const mapNotificationType = (apiType: string): Notification["type"] => {
+  switch (apiType) {
+    case "message_received":
+      return "message";
+    case "request_status_changed":
+      return "status_change";
+    case "request_assigned":
+    case "creator_assigned":
+      return "assignment";
+    case "welcome":
+    default:
+      return "system";
+  }
+};
+
+// Convert API notification to UI notification
+const mapApiNotification = (apiNotif: ApiNotification): Notification => {
+  return {
+    id: apiNotif.id,
+    type: mapNotificationType(apiNotif.type),
+    title: apiNotif.subject,
+    description: apiNotif.body,
+    createdAt: new Date(apiNotif.created_at),
+    read: apiNotif.is_read,
+  };
+};
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const { play: playSound } = useNotificationSound();
   const { permission, requestPermission, showNotification, isTabVisible } = useBrowserNotifications();
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const updatePreferences = useCallback((prefs: Partial<NotificationPreferences>) => {
     setPreferences((prev) => ({
@@ -187,8 +174,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     );
   }, []);
 
-  const markAllAsRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+    }
   }, []);
 
   const clearNotification = useCallback((id: string) => {
@@ -199,27 +192,75 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications([]);
   }, []);
 
-  // Simulate receiving a new notification periodically (for demo)
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await notificationsApi.getNotifications();
+      const mappedNotifications = response.data.items.map(mapApiNotification);
+      setNotifications(mappedNotifications);
+      const unread = mappedNotifications.filter((n) => !n.read).length;
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  }, []);
+
+  // Fetch notifications on mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Random chance to add a mock notification
-      if (Math.random() > 0.95) {
-        const mockMessages = [
-          { title: "New message from Sam Chen", description: "I've updated the design based on your feedback", creatorName: "Sam Chen" },
-          { title: "New message from Jordan Lee", description: "The video draft is ready for review", creatorName: "Jordan Lee" },
-          { title: "New message from Casey Taylor", description: "Quick question about the color palette", creatorName: "Casey Taylor" },
-        ];
-        const randomMessage = mockMessages[Math.floor(Math.random() * mockMessages.length)];
-        addNotification({
-          type: "message",
-          ...randomMessage,
-          requestId: `req-00${Math.floor(Math.random() * 4) + 1}`,
-        });
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Poll for notification count every 30 seconds
+  useEffect(() => {
+    const fetchNotificationCount = async () => {
+      try {
+        const response = await notificationsApi.getCount();
+        const newCount = response.data.count;
+
+        // If count increased, fetch new notifications
+        if (newCount > unreadCount) {
+          const notifResponse = await notificationsApi.getNotifications();
+          const mappedNotifications = notifResponse.data.items.map(mapApiNotification);
+          setNotifications(mappedNotifications);
+
+          // Show toast for new notifications
+          const newNotifications = mappedNotifications.filter((n) => !n.read);
+          if (newNotifications.length > 0 && preferences.delivery.inApp) {
+            const latestNotif = newNotifications[0];
+            const toastIcon = latestNotif.type === "message" ? "💬" :
+                            latestNotif.type === "status_change" ? "🔄" :
+                            latestNotif.type === "assignment" ? "👤" : "ℹ️";
+
+            toast(latestNotif.title, {
+              description: latestNotif.description,
+              icon: toastIcon,
+            });
+
+            // Play sound if enabled
+            if (preferences.delivery.sound) {
+              playSound();
+            }
+
+            // Show browser notification if enabled and tab not visible
+            if (preferences.delivery.browser && !isTabVisible) {
+              showNotification(latestNotif.title, {
+                body: latestNotif.description,
+                tag: latestNotif.id,
+              });
+            }
+          }
+        }
+
+        setUnreadCount(newCount);
+      } catch (error) {
+        console.error("Failed to fetch notification count:", error);
       }
-    }, 30000); // Check every 30 seconds
+    };
+
+    // Poll every 30 seconds
+    const interval = setInterval(fetchNotificationCount, 30000);
 
     return () => clearInterval(interval);
-  }, [addNotification]);
+  }, [unreadCount, preferences, playSound, showNotification, isTabVisible]);
 
   return (
     <NotificationContext.Provider
@@ -231,6 +272,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         markAllAsRead,
         clearNotification,
         clearAll,
+        fetchNotifications,
         notificationPermission: permission,
         requestNotificationPermission: requestPermission,
         preferences,

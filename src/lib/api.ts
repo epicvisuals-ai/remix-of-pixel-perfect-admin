@@ -381,3 +381,33 @@ export const creatorRequestsApi = {
   getRequestStats: () =>
     api.get<RequestStatsResponse>('/creators/me/request-stats'),
 };
+
+// Notification types
+export interface ApiNotification {
+  id: string;
+  user_id: string;
+  subject: string;
+  body: string;
+  type: string;
+  details: string | null;
+  cta: string | null;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationCountResponse {
+  count: number;
+}
+
+export interface NotificationsResponse {
+  items: ApiNotification[];
+  next_cursor: string | null;
+}
+
+// Notifications API functions
+export const notificationsApi = {
+  getCount: () => api.get<NotificationCountResponse>('/notifications/count'),
+  getNotifications: () => api.get<NotificationsResponse>('/notifications'),
+  markAllAsRead: () => api.post('/notifications/read'),
+};
