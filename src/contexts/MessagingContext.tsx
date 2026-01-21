@@ -30,6 +30,7 @@ export interface Conversation {
   participantId: string;
   participantName: string;
   participantAvatar: string;
+  participantCreatorId: string | null;
   lastMessage: string;
   lastMessageTime: Date;
   unreadCount: number;
@@ -89,6 +90,7 @@ function mapApiConversation(apiConv: ApiConversation): Conversation {
     participantId: displayParticipant.userId,
     participantName: displayParticipant.name,
     participantAvatar: displayParticipant.avatar || "",
+    participantCreatorId: displayParticipant.creatorId,
     lastMessage: apiConv.lastMessage?.content || "",
     lastMessageTime: apiConv.lastMessage ? new Date(apiConv.lastMessage.sentAt) : new Date(),
     unreadCount: currentUserParticipant?.unreadCount || 0,

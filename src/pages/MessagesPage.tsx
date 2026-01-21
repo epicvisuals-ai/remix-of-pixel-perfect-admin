@@ -12,6 +12,7 @@ import { MessageAttachment, Attachment, AttachmentPreview } from "@/components/m
 import { FileUploadButton } from "@/components/messaging/FileUploadButton";
 import { EmojiPicker } from "@/components/messaging/EmojiPicker";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 function formatTime(date: Date) {
   const now = new Date();
@@ -68,6 +69,7 @@ export default function MessagesPage() {
     hasMoreMessages,
   } = useMessaging();
 
+  const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -242,14 +244,20 @@ export default function MessagesPage() {
                   <p className="text-sm text-muted-foreground">
                     {isParticipantTyping ? (
                       <span className="text-primary">typing...</span>
-                    ) : (
+                    ) : activeConv.participantCreatorId ? (
                       "Creator"
-                    )}
+                    ) : null}
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
-                  View Profile
-                </Button>
+                {activeConv.participantCreatorId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/creators/${activeConv.participantCreatorId}`)}
+                  >
+                    View Profile
+                  </Button>
+                )}
               </div>
 
               {/* Messages */}
