@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useNotifications, NotificationPreferences as Preferences, EmailDigestSettings } from "@/contexts/NotificationContext";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const notificationTypes = [
   {
@@ -92,13 +93,28 @@ export default function NotificationsPage() {
 
   const [emailInput, setEmailInput] = useState(preferences.emailDigest.email);
 
-  const handleTypeToggle = (type: keyof Preferences["types"]) => {
-    updatePreferences({
+  const handleTypeToggle = async (type: keyof Preferences["types"]) => {
+    const isCurrentlyEnabled = preferences.types[type];
+    const willBeEnabled = !isCurrentlyEnabled;
+
+    // Find the notification type details for the toast message
+    const notifType = notificationTypes.find((t) => t.key === type);
+    const typeName = notifType?.label || type;
+
+    await updatePreferences({
       types: {
         ...preferences.types,
-        [type]: !preferences.types[type],
+        [type]: willBeEnabled,
       },
     });
+
+    // Show success toast
+    toast.success(
+      `${typeName} notifications ${willBeEnabled ? "enabled" : "disabled"}`,
+      {
+        description: `You will ${willBeEnabled ? "now" : "no longer"} receive ${typeName.toLowerCase()} notifications.`,
+      }
+    );
   };
 
   const handleDeliveryToggle = (method: keyof Preferences["delivery"]) => {
