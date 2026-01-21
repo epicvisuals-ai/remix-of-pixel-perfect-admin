@@ -46,6 +46,7 @@ interface Project {
   id: string;
   title: string;
   creator: {
+    id: string;
     name: string;
     avatar: string;
   };
@@ -63,6 +64,7 @@ interface Quote {
   id: string;
   title: string;
   creator: {
+    id: string;
     name: string;
     avatar: string;
   };
@@ -77,7 +79,7 @@ const mockProjects: Project[] = [
   {
     id: "1",
     title: "Brand Video Campaign Q1",
-    creator: { name: "Sarah Miller", avatar: "https://i.pravatar.cc/150?u=sarah" },
+    creator: { id: "creator-1", name: "Sarah Miller", avatar: "https://i.pravatar.cc/150?u=sarah" },
     status: "in_progress",
     progress: 65,
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -90,7 +92,7 @@ const mockProjects: Project[] = [
   {
     id: "2",
     title: "Product Photography Series",
-    creator: { name: "Alex Chen", avatar: "https://i.pravatar.cc/150?u=alex" },
+    creator: { id: "creator-2", name: "Alex Chen", avatar: "https://i.pravatar.cc/150?u=alex" },
     status: "pending_review",
     progress: 100,
     dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
@@ -103,7 +105,7 @@ const mockProjects: Project[] = [
   {
     id: "3",
     title: "Social Media Content Pack",
-    creator: { name: "Jordan Lee", avatar: "https://i.pravatar.cc/150?u=jordan" },
+    creator: { id: "creator-3", name: "Jordan Lee", avatar: "https://i.pravatar.cc/150?u=jordan" },
     status: "on_hold",
     progress: 30,
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
@@ -116,7 +118,7 @@ const mockProjects: Project[] = [
   {
     id: "4",
     title: "Website Redesign Assets",
-    creator: { name: "Emma Wilson", avatar: "https://i.pravatar.cc/150?u=emma" },
+    creator: { id: "creator-4", name: "Emma Wilson", avatar: "https://i.pravatar.cc/150?u=emma" },
     status: "completed",
     progress: 100,
     dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
@@ -132,7 +134,7 @@ const mockQuotes: Quote[] = [
   {
     id: "1",
     title: "Influencer Campaign Package",
-    creator: { name: "Marcus Johnson", avatar: "https://i.pravatar.cc/150?u=marcus" },
+    creator: { id: "creator-5", name: "Marcus Johnson", avatar: "https://i.pravatar.cc/150?u=marcus" },
     status: "pending",
     amount: 8500,
     submittedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
@@ -142,7 +144,7 @@ const mockQuotes: Quote[] = [
   {
     id: "2",
     title: "Brand Identity Refresh",
-    creator: { name: "Lisa Park", avatar: "https://i.pravatar.cc/150?u=lisa" },
+    creator: { id: "creator-6", name: "Lisa Park", avatar: "https://i.pravatar.cc/150?u=lisa" },
     status: "pending",
     amount: 4200,
     submittedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -152,7 +154,7 @@ const mockQuotes: Quote[] = [
   {
     id: "3",
     title: "Event Photography",
-    creator: { name: "David Kim", avatar: "https://i.pravatar.cc/150?u=david" },
+    creator: { id: "creator-7", name: "David Kim", avatar: "https://i.pravatar.cc/150?u=david" },
     status: "accepted",
     amount: 1800,
     submittedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -162,7 +164,7 @@ const mockQuotes: Quote[] = [
   {
     id: "4",
     title: "Motion Graphics Package",
-    creator: { name: "Nina Roberts", avatar: "https://i.pravatar.cc/150?u=nina" },
+    creator: { id: "creator-8", name: "Nina Roberts", avatar: "https://i.pravatar.cc/150?u=nina" },
     status: "rejected",
     amount: 6000,
     submittedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
@@ -172,7 +174,7 @@ const mockQuotes: Quote[] = [
   {
     id: "5",
     title: "Content Strategy Consultation",
-    creator: { name: "Tom Wright", avatar: "https://i.pravatar.cc/150?u=tom" },
+    creator: { id: "creator-9", name: "Tom Wright", avatar: "https://i.pravatar.cc/150?u=tom" },
     status: "expired",
     amount: 2500,
     submittedDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
@@ -222,9 +224,9 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("projects");
   const [messagePopupOpen, setMessagePopupOpen] = useState(false);
-  const [selectedCreator, setSelectedCreator] = useState<{ name: string; avatar: string } | null>(null);
+  const [selectedCreator, setSelectedCreator] = useState<{ id: string; name: string; avatar: string } | null>(null);
 
-  const handleMessageCreator = (creator: { name: string; avatar: string }) => {
+  const handleMessageCreator = (creator: { id: string; name: string; avatar: string }) => {
     setSelectedCreator(creator);
     setMessagePopupOpen(true);
   };
