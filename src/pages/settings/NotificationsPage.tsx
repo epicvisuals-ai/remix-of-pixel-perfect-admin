@@ -208,7 +208,7 @@ export default function NotificationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {deliveryMethods.map((method) => (
+          {deliveryMethods.filter((method) => method.key !== "email").map((method) => (
             <div key={method.key}>
               <div
                 className="flex items-center justify-between rounded-lg border p-4"
