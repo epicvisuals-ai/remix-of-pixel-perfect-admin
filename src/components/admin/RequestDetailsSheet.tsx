@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   Image,
@@ -61,6 +61,9 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import api, { requestApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import PortfolioPreviewModal, {
+  PortfolioItem,
+} from "@/components/creators/PortfolioPreviewModal";
 
 interface Creator {
   id: string;
@@ -287,6 +290,10 @@ export function RequestDetailsSheet({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [requestStatus, setRequestStatus] = useState<Request["status"]>("Created");
+  const [portfolioPreviewOpen, setPortfolioPreviewOpen] = useState(false);
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(
+    null
+  );
   const [requestDetails, setRequestDetails] = useState<{
     brief: string;
     budget: number;
@@ -311,6 +318,21 @@ export function RequestDetailsSheet({
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const { toast } = useToast();
+
+  const portfolioItems = useMemo<PortfolioItem[]>(() => {
+    if (!request?.deliverables) return [];
+    return request.deliverables.flatMap((deliverable) =>
+      deliverable.files
+        .filter(
+          (file) => file.fileType === "image" || file.mimeType?.startsWith("image/")
+        )
+        .map((file) => ({
+          id: file.id,
+          title: file.fileName,
+          imageUrl: file.url,
+        }))
+    );
+  }, [request?.deliverables]);
 
   // Reset zoom/pan when changing images or closing lightbox
   useEffect(() => {
@@ -1121,13 +1143,37 @@ export function RequestDetailsSheet({
                 <div className="space-y-3">
                   {request.deliverables.map((deliverable) =>
                     deliverable.files.map((file) => {
-                      const isImage = file.fileType === "image" || file.mimeType?.startsWith("image/");
+                      const isImage =
+                        file.fileType === "image" || file.mimeType?.startsWith("image/");
                       const FileIcon = isImage ? Image : FileText;
+                      const portfolioItem = isImage
+                        ? portfolioItems.find((item) => item.id === file.id) ?? null
+                        : null;
+                      const handlePreview = () => {
+                        if (!portfolioItem) return;
+                        setSelectedPortfolioItem(portfolioItem);
+                        setPortfolioPreviewOpen(true);
+                      };
 
                       return (
                         <div
                           key={file.id}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/60"
+                          role={portfolioItem ? "button" : undefined}
+                          tabIndex={portfolioItem ? 0 : -1}
+                          onClick={portfolioItem ? handlePreview : undefined}
+                          onKeyDown={
+                            portfolioItem
+                              ? (event) => {
+                                  if (event.key === "Enter" || event.key === " ") {
+                                    event.preventDefault();
+                                    handlePreview();
+                                  }
+                                }
+                              : undefined
+                          }
+                          className={`flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/60 ${
+                            portfolioItem ? "cursor-pointer hover:bg-muted" : ""
+                          }`}
                         >
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-background">
                             {isImage && file.url ? (
@@ -1152,7 +1198,10 @@ export function RequestDetailsSheet({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 flex-shrink-0"
-                            onClick={() => window.open(file.url, "_blank")}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              window.open(file.url, "_blank");
+                            }}
                           >
                             <Download className="h-4 w-4 text-muted-foreground" />
                           </Button>
@@ -1579,6 +1628,14 @@ export function RequestDetailsSheet({
             )}
           </DialogContent>
         </Dialog>
+
+        <PortfolioPreviewModal
+          open={portfolioPreviewOpen}
+          onOpenChange={setPortfolioPreviewOpen}
+          currentItem={selectedPortfolioItem}
+          items={portfolioItems}
+          onNavigate={setSelectedPortfolioItem}
+        />
       </SheetContent>
     </Sheet>
   );
