@@ -32,6 +32,15 @@ export interface Deliverable {
   fileSize?: number;
 }
 
+export interface DeliverableInfo {
+  id: string;
+  name: string;
+  status: string;
+  submittedAt?: Date | null;
+  approvedAt?: Date | null;
+  revisionFeedback?: string | null;
+}
+
 export interface Message {
   id: string;
   author: string;
@@ -51,6 +60,7 @@ export interface Job {
   tone: string;
   deadline: string;
   deliverables: Deliverable[];
+  deliverablesInfo?: DeliverableInfo[];
   messages: Message[];
 }
 
@@ -83,8 +93,21 @@ export const mapApiRequestToJob = (request: CreatorRequestItem): Job => {
 
   // Flatten all files from all deliverables into a single array
   const deliverables: Deliverable[] = [];
+  const deliverablesInfo: DeliverableInfo[] = [];
+
   if (request.deliverables) {
     request.deliverables.forEach((deliverable) => {
+      // Store deliverable metadata
+      deliverablesInfo.push({
+        id: deliverable.id,
+        name: deliverable.name,
+        status: deliverable.status,
+        submittedAt: deliverable.submittedAt ? new Date(deliverable.submittedAt) : null,
+        approvedAt: deliverable.approvedAt ? new Date(deliverable.approvedAt) : null,
+        revisionFeedback: deliverable.revisionFeedback,
+      });
+
+      // Flatten files
       deliverable.files.forEach((file) => {
         deliverables.push({
           id: file.id,
@@ -112,6 +135,7 @@ export const mapApiRequestToJob = (request: CreatorRequestItem): Job => {
     tone,
     deadline,
     deliverables,
+    deliverablesInfo,
     messages: [],
   };
 };

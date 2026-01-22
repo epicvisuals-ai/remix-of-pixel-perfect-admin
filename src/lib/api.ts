@@ -303,6 +303,7 @@ export interface CreatorRequestItem {
     status: string;
     submittedAt?: string | null;
     approvedAt?: string | null;
+    revisionFeedback?: string | null;
     approvedBy?: any | null;
     files: Array<{
       id: string;

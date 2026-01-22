@@ -33,6 +33,7 @@ export interface Deliverable {
   status: string;
   submittedAt?: Date | null;
   approvedAt?: Date | null;
+  revisionFeedback?: string | null;
   approvedBy?: any | null;
   files: DeliverableFile[];
 }
@@ -75,6 +76,7 @@ export interface ApiDeliverable {
   status: string;
   submittedAt?: string | null;
   approvedAt?: string | null;
+  revisionFeedback?: string | null;
   approvedBy?: any | null;
   files: ApiDeliverableFile[];
 }
@@ -138,6 +140,7 @@ export const mapRequestDetail = (requestId: string, data?: ApiRequestDetail): Re
     status: deliverable.status,
     submittedAt: deliverable.submittedAt ? new Date(deliverable.submittedAt) : null,
     approvedAt: deliverable.approvedAt ? new Date(deliverable.approvedAt) : null,
+    revisionFeedback: deliverable.revisionFeedback,
     approvedBy: deliverable.approvedBy,
     files: deliverable.files.map((file) => ({
       id: file.id,
