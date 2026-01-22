@@ -102,6 +102,35 @@ interface Comment {
   readAt?: Date;
 }
 
+interface DeliverableFile {
+  id: string;
+  fileName: string;
+  fileType: string;
+  mimeType: string;
+  fileSize: number;
+  url: string;
+  thumbnailUrl?: string | null;
+  uploadedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+  createdAt: Date;
+}
+
+interface Deliverable {
+  id: string;
+  name: string;
+  description?: string;
+  dueDate?: Date | null;
+  status: string;
+  submittedAt?: Date | null;
+  approvedAt?: Date | null;
+  approvedBy?: any | null;
+  files: DeliverableFile[];
+}
+
 interface Request {
   id: string;
   contentType: "image" | "video";
@@ -113,6 +142,7 @@ interface Request {
   deadline?: Date;
   assignedCreator?: Creator;
   comments?: Comment[];
+  deliverables?: Deliverable[];
 }
 
 interface RequestDetailsSheetProps {
@@ -1069,6 +1099,68 @@ export function RequestDetailsSheet({
                 <Badge variant="outline" className="text-foreground">
                   {request.toneOfVoice}
                 </Badge>
+              </div>
+            </>
+          )}
+
+          {/* Deliverables Section */}
+          {request.deliverables && request.deliverables.length > 0 && request.deliverables.some(d => d.files.length > 0) && (
+            <>
+              <Separator />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-medium text-foreground">
+                    Deliverables
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Upload your final files before submitting for review.
+                </p>
+
+                <div className="space-y-3">
+                  {request.deliverables.map((deliverable) =>
+                    deliverable.files.map((file) => {
+                      const isImage = file.fileType === "image" || file.mimeType?.startsWith("image/");
+                      const FileIcon = isImage ? Image : FileText;
+
+                      return (
+                        <div
+                          key={file.id}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/60"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-background">
+                            {isImage && file.url ? (
+                              <img
+                                src={file.url}
+                                alt={file.fileName}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <FileIcon className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {file.fileName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(file.fileSize)} • {format(file.createdAt, "MMM d, yyyy")}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={() => window.open(file.url, "_blank")}
+                          >
+                            <Download className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </>
           )}

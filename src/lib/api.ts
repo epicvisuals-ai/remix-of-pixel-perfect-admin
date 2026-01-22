@@ -295,6 +295,32 @@ export interface CreatorRequestItem {
     lastName: string;
     avatar: string;
   };
+  deliverables?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    dueDate?: string | null;
+    status: string;
+    submittedAt?: string | null;
+    approvedAt?: string | null;
+    approvedBy?: any | null;
+    files: Array<{
+      id: string;
+      fileName: string;
+      fileType: string;
+      mimeType: string;
+      fileSize: number;
+      url: string;
+      thumbnailUrl?: string | null;
+      uploadedBy: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        avatar?: string;
+      };
+      createdAt: string;
+    }>;
+  }>;
 }
 
 export interface CreatorRequestsResponse {

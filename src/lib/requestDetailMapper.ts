@@ -6,6 +6,37 @@ export interface AssignedCreator {
   specialty: string;
 }
 
+export interface UploadedBy {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatar?: string;
+}
+
+export interface DeliverableFile {
+  id: string;
+  fileName: string;
+  fileType: string;
+  mimeType: string;
+  fileSize: number;
+  url: string;
+  thumbnailUrl?: string | null;
+  uploadedBy: UploadedBy;
+  createdAt: Date;
+}
+
+export interface Deliverable {
+  id: string;
+  name: string;
+  description?: string;
+  dueDate?: Date | null;
+  status: string;
+  submittedAt?: Date | null;
+  approvedAt?: Date | null;
+  approvedBy?: any | null;
+  files: DeliverableFile[];
+}
+
 export interface RequestDetail {
   id: string;
   contentType: "image" | "video";
@@ -16,10 +47,40 @@ export interface RequestDetail {
   toneOfVoice?: string;
   deadline?: Date;
   assignedCreator?: AssignedCreator;
+  deliverables?: Deliverable[];
+}
+
+export interface ApiDeliverableFile {
+  id: string;
+  fileName: string;
+  fileType: string;
+  mimeType: string;
+  fileSize: number;
+  url: string;
+  thumbnailUrl?: string | null;
+  uploadedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+  createdAt: string;
+}
+
+export interface ApiDeliverable {
+  id: string;
+  name: string;
+  description?: string;
+  dueDate?: string | null;
+  status: string;
+  submittedAt?: string | null;
+  approvedAt?: string | null;
+  approvedBy?: any | null;
+  files: ApiDeliverableFile[];
 }
 
 export interface ApiRequestDetail
-  extends Omit<RequestDetail, "createdAt" | "deadline" | "contentType" | "assignedCreator"> {
+  extends Omit<RequestDetail, "createdAt" | "deadline" | "contentType" | "assignedCreator" | "deliverables"> {
   contentType?: "image" | "video";
   type?: "Image" | "Video" | "image" | "video";
   createdAt?: string;
@@ -31,6 +92,7 @@ export interface ApiRequestDetail
     avatar?: string | null;
     specialty?: string | null;
   } | null;
+  deliverables?: ApiDeliverable[];
 }
 
 export const normalizeStatus = (value?: string): RequestDetail["status"] => {
@@ -68,6 +130,33 @@ export const mapRequestDetail = (requestId: string, data?: ApiRequestDetail): Re
       }
     : undefined;
 
+  const mappedDeliverables = data?.deliverables?.map((deliverable) => ({
+    id: deliverable.id,
+    name: deliverable.name,
+    description: deliverable.description,
+    dueDate: deliverable.dueDate ? new Date(deliverable.dueDate) : null,
+    status: deliverable.status,
+    submittedAt: deliverable.submittedAt ? new Date(deliverable.submittedAt) : null,
+    approvedAt: deliverable.approvedAt ? new Date(deliverable.approvedAt) : null,
+    approvedBy: deliverable.approvedBy,
+    files: deliverable.files.map((file) => ({
+      id: file.id,
+      fileName: file.fileName,
+      fileType: file.fileType,
+      mimeType: file.mimeType,
+      fileSize: file.fileSize,
+      url: file.url,
+      thumbnailUrl: file.thumbnailUrl,
+      uploadedBy: {
+        id: file.uploadedBy.id,
+        firstName: file.uploadedBy.firstName,
+        lastName: file.uploadedBy.lastName,
+        avatar: file.uploadedBy.avatar,
+      },
+      createdAt: new Date(file.createdAt),
+    })),
+  }));
+
   return {
     id: data?.id ?? requestId,
     contentType: normalizeContentType(data?.contentType ?? data?.type),
@@ -78,5 +167,6 @@ export const mapRequestDetail = (requestId: string, data?: ApiRequestDetail): Re
     createdAt: data?.createdAt ? new Date(data.createdAt) : new Date(),
     budget: data?.budget ?? 0,
     assignedCreator: mappedAssignedCreator,
+    deliverables: mappedDeliverables,
   };
 };
