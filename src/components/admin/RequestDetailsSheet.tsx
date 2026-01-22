@@ -268,7 +268,7 @@ const isFullEditStatus = (status: Request["status"]) => {
 
 const canDeleteRequestStatus = (status: Request["status"]) => {
   const normalized = normalizeRequestStatus(status);
-  return ["created", "submitted", "in_review"].includes(normalized);
+  return ["created", "submitted"].includes(normalized);
 };
 
 export function RequestDetailsSheet({
