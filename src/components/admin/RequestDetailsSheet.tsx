@@ -1675,8 +1675,7 @@ export function RequestDetailsSheet({
                       variant="destructive"
                       className="flex-1"
                       onClick={() => {
-                        setRequestStatus("Rejected");
-                        toast({ title: "Request rejected.", variant: "destructive" });
+                        toast({ title: "Not yet implemented" });
                       }}
                     >
                       Reject
