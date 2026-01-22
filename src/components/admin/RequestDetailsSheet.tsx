@@ -21,6 +21,10 @@ import {
   Upload,
   RotateCcw,
   CheckCheck,
+  CheckCircle,
+  RotateCw,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import {
   Sheet,
@@ -36,6 +40,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -59,7 +64,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import api, { requestApi } from "@/lib/api";
+import api, { requestApi, deliverablesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import PortfolioPreviewModal, {
@@ -314,6 +319,14 @@ export function RequestDetailsSheet({
   const [isTyping, setIsTyping] = useState(false);
   const [creatorIsTyping, setCreatorIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Deliverable approval/revision state
+  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
+  const [revisionDeliverableId, setRevisionDeliverableId] = useState<string | null>(null);
+  const [revisionFeedback, setRevisionFeedback] = useState("");
+  const [isApprovingDeliverable, setIsApprovingDeliverable] = useState<string | null>(null);
+  const [isRequestingRevision, setIsRequestingRevision] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -322,8 +335,8 @@ export function RequestDetailsSheet({
   const { user } = useAuth();
 
   const portfolioItems = useMemo<PortfolioItem[]>(() => {
-    if (!request?.deliverables) return [];
-    return request.deliverables.flatMap((deliverable) =>
+    if (deliverables.length === 0) return [];
+    return deliverables.flatMap((deliverable) =>
       deliverable.files
         .filter(
           (file) => file.fileType === "image" || file.mimeType?.startsWith("image/")
@@ -334,7 +347,7 @@ export function RequestDetailsSheet({
           imageUrl: file.url,
         }))
     );
-  }, [request?.deliverables]);
+  }, [deliverables]);
 
   // Reset zoom/pan when changing images or closing lightbox
   useEffect(() => {
@@ -403,7 +416,114 @@ export function RequestDetailsSheet({
     setEditBudget(String(request.budget));
     setEditDeadline(formatDateInputValue(request.deadline));
     setIsEditingRequest(false);
+    setDeliverables(request.deliverables ?? []);
   }, [request]);
+
+  // Deliverable approval handler
+  const handleApproveDeliverable = useCallback(async (deliverableId: string) => {
+    setIsApprovingDeliverable(deliverableId);
+    try {
+      const response = await deliverablesApi.approveDeliverable(deliverableId);
+      if (response.data?.success) {
+        setDeliverables((prev) =>
+          prev.map((d) =>
+            d.id === deliverableId
+              ? { ...d, status: "approved", approvedAt: new Date() }
+              : d
+          )
+        );
+        toast({ title: "Deliverable approved successfully." });
+      }
+    } catch (error) {
+      console.error("Failed to approve deliverable:", error);
+      toast({
+        title: "Failed to approve deliverable.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApprovingDeliverable(null);
+    }
+  }, [toast]);
+
+  // Request revision handler
+  const handleRequestRevision = useCallback(async () => {
+    if (!revisionDeliverableId || !revisionFeedback.trim()) return;
+    setIsRequestingRevision(true);
+    try {
+      const response = await deliverablesApi.requestRevision(
+        revisionDeliverableId,
+        revisionFeedback.trim()
+      );
+      if (response.data?.success) {
+        setDeliverables((prev) =>
+          prev.map((d) =>
+            d.id === revisionDeliverableId
+              ? { ...d, status: "revision_requested" }
+              : d
+          )
+        );
+        toast({ title: "Revision requested successfully." });
+        setRevisionDialogOpen(false);
+        setRevisionDeliverableId(null);
+        setRevisionFeedback("");
+      }
+    } catch (error) {
+      console.error("Failed to request revision:", error);
+      toast({
+        title: "Failed to request revision.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRequestingRevision(false);
+    }
+  }, [revisionDeliverableId, revisionFeedback, toast]);
+
+  const openRevisionDialog = (deliverableId: string) => {
+    setRevisionDeliverableId(deliverableId);
+    setRevisionFeedback("");
+    setRevisionDialogOpen(true);
+  };
+
+  const getDeliverableStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "approved":
+        return (
+          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approved
+          </Badge>
+        );
+      case "submitted":
+      case "in_review":
+        return (
+          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending Review
+          </Badge>
+        );
+      case "revision_requested":
+        return (
+          <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
+            <RotateCw className="h-3 w-3 mr-1" />
+            Revision Requested
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge variant="secondary">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const canReviewDeliverable = (status: string) => {
+    const normalized = status.toLowerCase();
+    return ["submitted", "in_review"].includes(normalized);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -1141,7 +1261,7 @@ export function RequestDetailsSheet({
           )}
 
           {/* Deliverables Section */}
-          {request.deliverables && request.deliverables.length > 0 && request.deliverables.some(d => d.files.length > 0) && (
+          {deliverables.length > 0 && deliverables.some(d => d.files.length > 0) && (
             <>
               <Separator />
               <div className="space-y-4">
@@ -1152,78 +1272,153 @@ export function RequestDetailsSheet({
                   </h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Upload your final files before submitting for review.
+                  Review submitted files and approve or request revisions.
                 </p>
 
-                <div className="space-y-3">
-                  {request.deliverables.map((deliverable) =>
-                    deliverable.files.map((file) => {
-                      const isImage =
-                        file.fileType === "image" || file.mimeType?.startsWith("image/");
-                      const FileIcon = isImage ? Image : FileText;
-                      const portfolioItem = isImage
-                        ? portfolioItems.find((item) => item.id === file.id) ?? null
-                        : null;
-                      const handlePreview = () => {
-                        if (!portfolioItem) return;
-                        setSelectedPortfolioItem(portfolioItem);
-                        setPortfolioPreviewOpen(true);
-                      };
+                <div className="space-y-4">
+                  {deliverables.filter(d => d.files.length > 0).map((deliverable) => (
+                    <div
+                      key={deliverable.id}
+                      className="rounded-xl border border-border bg-card overflow-hidden"
+                    >
+                      {/* Deliverable Header */}
+                      <div className="flex items-center justify-between p-3 bg-muted/30 border-b border-border">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-foreground">
+                            {deliverable.name}
+                          </span>
+                          {getDeliverableStatusBadge(deliverable.status)}
+                        </div>
+                        {deliverable.dueDate && (
+                          <span className="text-xs text-muted-foreground">
+                            Due: {format(deliverable.dueDate, "MMM d, yyyy")}
+                          </span>
+                        )}
+                      </div>
 
-                      return (
-                        <div
-                          key={file.id}
-                          role={portfolioItem ? "button" : undefined}
-                          tabIndex={portfolioItem ? 0 : -1}
-                          onClick={portfolioItem ? handlePreview : undefined}
-                          onKeyDown={
-                            portfolioItem
-                              ? (event) => {
-                                  if (event.key === "Enter" || event.key === " ") {
-                                    event.preventDefault();
-                                    handlePreview();
-                                  }
-                                }
-                              : undefined
-                          }
-                          className={`flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/60 ${
-                            portfolioItem ? "cursor-pointer hover:bg-muted" : ""
-                          }`}
-                        >
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-background">
-                            {isImage && file.url ? (
-                              <img
-                                src={file.url}
-                                alt={file.fileName}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <FileIcon className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {file.fileName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(file.fileSize)} • {format(file.createdAt, "MMM d, yyyy")}
-                            </p>
-                          </div>
+                      {/* Deliverable Description */}
+                      {deliverable.description && (
+                        <div className="px-3 py-2 border-b border-border bg-muted/10">
+                          <p className="text-sm text-muted-foreground">
+                            {deliverable.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Files */}
+                      <div className="p-3 space-y-2">
+                        {deliverable.files.map((file) => {
+                          const isImage =
+                            file.fileType === "image" || file.mimeType?.startsWith("image/");
+                          const FileIcon = isImage ? Image : FileText;
+                          const portfolioItem = isImage
+                            ? portfolioItems.find((item) => item.id === file.id) ?? null
+                            : null;
+                          const handlePreview = () => {
+                            if (!portfolioItem) return;
+                            setSelectedPortfolioItem(portfolioItem);
+                            setPortfolioPreviewOpen(true);
+                          };
+
+                          return (
+                            <div
+                              key={file.id}
+                              role={portfolioItem ? "button" : undefined}
+                              tabIndex={portfolioItem ? 0 : -1}
+                              onClick={portfolioItem ? handlePreview : undefined}
+                              onKeyDown={
+                                portfolioItem
+                                  ? (event) => {
+                                      if (event.key === "Enter" || event.key === " ") {
+                                        event.preventDefault();
+                                        handlePreview();
+                                      }
+                                    }
+                                  : undefined
+                              }
+                              className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/60 ${
+                                portfolioItem ? "cursor-pointer hover:bg-muted" : ""
+                              }`}
+                            >
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-background">
+                                {isImage && file.url ? (
+                                  <img
+                                    src={file.url}
+                                    alt={file.fileName}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <FileIcon className="h-5 w-5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground truncate">
+                                  {file.fileName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(file.fileSize)} • {format(file.createdAt, "MMM d, yyyy")}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 flex-shrink-0"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  window.open(file.url, "_blank");
+                                }}
+                              >
+                                <Download className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Action Buttons for submitted deliverables */}
+                      {canReviewDeliverable(deliverable.status) && (
+                        <div className="flex gap-2 p-3 border-t border-border bg-muted/10">
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 flex-shrink-0"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              window.open(file.url, "_blank");
-                            }}
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleApproveDeliverable(deliverable.id)}
+                            disabled={isApprovingDeliverable === deliverable.id}
                           >
-                            <Download className="h-4 w-4 text-muted-foreground" />
+                            {isApprovingDeliverable === deliverable.id ? (
+                              <>
+                                <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                                Approving...
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4 mr-2" />
+                                Approve
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => openRevisionDialog(deliverable.id)}
+                          >
+                            <RotateCw className="h-4 w-4 mr-2" />
+                            Request Revision
                           </Button>
                         </div>
-                      );
-                    })
-                  )}
+                      )}
+
+                      {/* Approved info */}
+                      {deliverable.status.toLowerCase() === "approved" && deliverable.approvedAt && (
+                        <div className="flex items-center gap-2 p-3 border-t border-border bg-green-50 dark:bg-green-950/20">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-sm text-green-700 dark:text-green-400">
+                            Approved {formatDistanceToNow(deliverable.approvedAt, { addSuffix: true })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </>
@@ -1666,6 +1861,35 @@ export function RequestDetailsSheet({
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Revision Request Dialog */}
+        <AlertDialog open={revisionDialogOpen} onOpenChange={setRevisionDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Request Revision</AlertDialogTitle>
+              <AlertDialogDescription>
+                Provide feedback for the creator about what changes are needed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <Textarea
+                placeholder="Describe the changes you'd like to see..."
+                value={revisionFeedback}
+                onChange={(e) => setRevisionFeedback(e.target.value)}
+                className="min-h-[120px]"
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleRequestRevision}
+                disabled={!revisionFeedback.trim() || isRequestingRevision}
+              >
+                {isRequestingRevision ? "Submitting..." : "Request Revision"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <PortfolioPreviewModal
           open={portfolioPreviewOpen}

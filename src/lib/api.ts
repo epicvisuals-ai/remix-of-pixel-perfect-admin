@@ -544,4 +544,13 @@ export const filesApi = {
 export const deliverablesApi = {
   submitDeliverable: (deliverableId: string) =>
     api.post(`/deliverables/${deliverableId}/submit`),
+  approveDeliverable: (deliverableId: string) =>
+    api.post<{ success: boolean; data: { id: string; status: string; approvedAt: string } }>(
+      `/deliverables/${deliverableId}/approve`
+    ),
+  requestRevision: (deliverableId: string, feedback: string) =>
+    api.post<{ success: boolean; data: { id: string; status: string } }>(
+      `/deliverables/${deliverableId}/request-revision`,
+      { feedback }
+    ),
 };
