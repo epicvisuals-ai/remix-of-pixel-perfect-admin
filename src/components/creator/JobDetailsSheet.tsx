@@ -23,7 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { creatorRequestsApi } from "@/lib/api";
+import { creatorRequestsApi, filesApi } from "@/lib/api";
 import type { Deliverable, Job, Message } from "@/lib/creatorRequestMapper";
 
 const formatFileSize = (bytes: number): string => {
@@ -159,6 +159,7 @@ export const JobDetailsSheet = ({
   const [newMessage, setNewMessage] = useState("");
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   if (!job) return null;
 
@@ -226,25 +227,41 @@ export const JobDetailsSheet = ({
     toast.success("Deliverable submitted for review!");
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      const newDeliverable: Deliverable = {
-        id: `del-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        name: file.name,
-        size: formatFileSize(file.size),
-        uploadedAt: new Date(),
-        url: URL.createObjectURL(file),
-        type: file.type,
-      };
-      onAddDeliverable(job.id, newDeliverable);
-      toast.success(`Uploaded: ${file.name}`);
-    });
+    setIsUploading(true);
+    const fileArray = Array.from(files);
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    try {
+      // Upload files sequentially to avoid overwhelming the server
+      for (const file of fileArray) {
+        try {
+          const response = await filesApi.uploadFile(file, job.id);
+
+          if (response.data.success) {
+            const newDeliverable: Deliverable = {
+              id: response.data.data.id,
+              name: response.data.data.fileName,
+              size: formatFileSize(file.size),
+              uploadedAt: new Date(),
+              url: response.data.data.storageUrl,
+              type: file.type,
+            };
+            onAddDeliverable(job.id, newDeliverable);
+            toast.success(`Uploaded: ${file.name}`);
+          }
+        } catch (error) {
+          console.error(`Error uploading ${file.name}:`, error);
+          toast.error(`Failed to upload ${file.name}. Please try again.`);
+        }
+      }
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -347,8 +364,12 @@ export const JobDetailsSheet = ({
               <CardContent className="space-y-4">
                 {job.status === "In Progress" && (
                   <div
-                    className="border-2 border-dashed border-primary/30 rounded-2xl p-6 text-center cursor-pointer bg-muted/30 hover:border-primary/60 hover:bg-muted/40 transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed border-primary/30 rounded-2xl p-6 text-center bg-muted/30 transition-colors ${
+                      isUploading
+                        ? "opacity-60 cursor-not-allowed"
+                        : "cursor-pointer hover:border-primary/60 hover:bg-muted/40"
+                    }`}
+                    onClick={() => !isUploading && fileInputRef.current?.click()}
                   >
                     <input
                       ref={fileInputRef}
@@ -357,12 +378,13 @@ export const JobDetailsSheet = ({
                       className="hidden"
                       onChange={handleFileUpload}
                       accept="image/*,video/*,.pdf,.zip,.psd,.ai,.fig"
+                      disabled={isUploading}
                     />
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
-                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <Upload className={`h-5 w-5 text-muted-foreground ${isUploading ? "animate-pulse" : ""}`} />
                     </div>
                     <p className="mt-3 text-sm font-semibold text-foreground">
-                      Drag and drop or click to upload
+                      {isUploading ? "Uploading..." : "Drag and drop or click to upload"}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       MP4, MOV, JPG, PNG, PDF, or design files
