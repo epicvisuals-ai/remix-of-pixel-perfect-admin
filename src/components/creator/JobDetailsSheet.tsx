@@ -242,9 +242,20 @@ export const JobDetailsSheet = ({
 
     if (isSubmittingDeliverable) return;
 
+    const latestDeliverable = job.deliverables.reduce<Deliverable | null>((latest, deliverable) => {
+      if (!deliverable.deliverableId) return latest;
+      if (!latest) return deliverable;
+      return deliverable.uploadedAt > latest.uploadedAt ? deliverable : latest;
+    }, null);
+
+    if (!latestDeliverable?.deliverableId) {
+      toast.error("Unable to determine which deliverable to submit.");
+      return;
+    }
+
     setIsSubmittingDeliverable(true);
     try {
-      await deliverablesApi.submitDeliverable(job.id);
+      await deliverablesApi.submitDeliverable(latestDeliverable.deliverableId);
       onStatusChange(job.id, "In Review");
       toast.success("Deliverable submitted for review!");
     } catch (error) {
@@ -269,8 +280,11 @@ export const JobDetailsSheet = ({
           const response = await filesApi.uploadFile(file, job.id);
 
           if (response.data.success) {
+            const deliverableId =
+              (response.data.data as { deliverableId?: string }).deliverableId ?? response.data.data.id;
             const newDeliverable: Deliverable = {
               id: response.data.data.id,
+              deliverableId,
               name: response.data.data.fileName,
               size: formatFileSize(file.size),
               uploadedAt: new Date(),
