@@ -29,6 +29,7 @@ export function FileUploadButton({ onFilesSelected, disabled }: FileUploadButton
       url: URL.createObjectURL(file),
       size: file.size,
       mimeType: file.type,
+      file, // Store the original File object for upload
     }));
 
     onFilesSelected(newAttachments);

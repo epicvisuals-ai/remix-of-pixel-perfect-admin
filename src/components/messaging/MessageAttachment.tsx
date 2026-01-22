@@ -8,6 +8,7 @@ export interface Attachment {
   url: string;
   size: number;
   mimeType: string;
+  file?: File; // Original file object for upload
 }
 
 interface MessageAttachmentProps {

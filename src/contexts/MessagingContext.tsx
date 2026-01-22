@@ -98,6 +98,21 @@ function mapApiConversation(apiConv: ApiConversation): Conversation {
   };
 }
 
+// Helper to determine attachment type from content type
+function getAttachmentType(contentType: string): "image" | "document" | "file" {
+  if (contentType.startsWith("image/")) {
+    return "image";
+  }
+  if (contentType === "application/pdf" ||
+      contentType.includes("document") ||
+      contentType.includes("spreadsheet") ||
+      contentType.includes("presentation") ||
+      contentType === "text/plain") {
+    return "document";
+  }
+  return "file";
+}
+
 // Map API message to local format
 function mapApiMessage(apiMsg: ApiMessage, conversationId: string): Message {
   return {
@@ -113,10 +128,10 @@ function mapApiMessage(apiMsg: ApiMessage, conversationId: string): Message {
     attachments: apiMsg.attachments?.map(att => ({
       id: att.id,
       name: att.fileName,
-      type: "document" as const,
-      url: "", // URL would come from file storage - using empty string as placeholder
-      size: att.fileSize,
-      mimeType: "application/octet-stream",
+      type: getAttachmentType(att.contentType),
+      url: att.url,
+      size: att.size,
+      mimeType: att.contentType,
     })),
   };
 }
@@ -290,13 +305,32 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     );
 
     try {
-      // Send message to server
-      const response = await messagingApi.sendMessage(activeConversation, {
-        content: trimmedContent,
-        attachments: attachments?.map(a => ({ fileId: a.id })),
-      });
+      // Check if we have new files to upload (attachments with File objects)
+      const filesToUpload = attachments?.filter(a => a.file).map(a => a.file!) || [];
+      const existingFileIds = attachments?.filter(a => !a.file).map(a => ({ id: a.id })) || [];
 
-      // Update message with real ID and status
+      let response;
+      if (filesToUpload.length > 0) {
+        // Use multipart/form-data for new file uploads
+        response = await messagingApi.sendMessageWithFiles(activeConversation, trimmedContent, filesToUpload);
+      } else {
+        // Use JSON for messages without new files or with existing file IDs
+        response = await messagingApi.sendMessage(activeConversation, {
+          content: trimmedContent,
+          attachments: existingFileIds.length > 0 ? existingFileIds : undefined,
+        });
+      }
+
+      // Update message with real ID, status, and server-returned attachments
+      const serverAttachments = response.data.data.attachments?.map(att => ({
+        id: att.id,
+        name: att.fileName,
+        type: getAttachmentType(att.contentType),
+        url: att.url,
+        size: att.size,
+        mimeType: att.contentType,
+      }));
+
       setAllMessages((prev) => ({
         ...prev,
         [activeConversation]: (prev[activeConversation] || []).map((msg) =>
@@ -305,6 +339,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
                 ...msg,
                 id: response.data.data.id,
                 status: response.data.data.status as MessageStatus,
+                attachments: serverAttachments || msg.attachments,
               }
             : msg
         ),
