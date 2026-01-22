@@ -756,6 +756,15 @@ export function RequestDetailsSheet({
   const isBrandAdmin = normalizedRole === "brand" || normalizedRole === "admin";
   const needsBrandReview = isBrandAdmin && normalizedStatus === "in_review";
 
+  // Check if there are any submitted deliverables that need review
+  const hasSubmittedDeliverables = deliverables.some(d => {
+    const normalized = d.status.toLowerCase();
+    return ["submitted", "in_review"].includes(normalized);
+  });
+
+  // Show approve/reject buttons only if needsBrandReview AND there are NO submitted deliverables
+  const shouldShowApproveRejectButtons = needsBrandReview && !hasSubmittedDeliverables;
+
   // Collect all image attachments for lightbox navigation
   const allImageAttachments = comments.flatMap(
     (comment) => comment.attachments?.filter((a) => a.type === "image") || []
@@ -1651,7 +1660,7 @@ export function RequestDetailsSheet({
               </Button>
             ) : (
               <>
-                {needsBrandReview && (
+                {shouldShowApproveRejectButtons && (
                   <>
                     <Button
                       className="flex-1"
@@ -1674,7 +1683,7 @@ export function RequestDetailsSheet({
                     </Button>
                   </>
                 )}
-                {isEditableRequestStatus(requestStatus) && !needsBrandReview && (
+                {isEditableRequestStatus(requestStatus) && !shouldShowApproveRejectButtons && (
                   <Button variant="outline" className="flex-1" onClick={handleEditRequest}>
                     <Edit2 className="h-4 w-4 mr-2" />
                     Edit Request
