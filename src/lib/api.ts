@@ -153,10 +153,32 @@ export interface CreateRequestPayload {
   deadline: string | null;
 }
 
+export interface ApproveRequestResponse {
+  success: boolean;
+  data: {
+    id: string;
+    status: string;
+    statusChangedAt: string;
+  };
+}
+
+export interface RejectRequestResponse {
+  success: boolean;
+  data: {
+    id: string;
+    status: string;
+    statusChangedAt: string;
+  };
+}
+
 export const requestApi = {
   createRequest: (data: CreateRequestPayload) => api.post('/requests', data),
   submitRequest: (requestId: string) => api.post(`/requests/${requestId}/submit`),
   deleteRequest: (requestId: string) => api.delete(`/requests/${requestId}`),
+  approveRequest: (requestId: string) =>
+    api.post<ApproveRequestResponse>(`/requests/${requestId}/approve`),
+  rejectRequest: (requestId: string) =>
+    api.post<RejectRequestResponse>(`/requests/${requestId}/reject`),
 };
 
 // Creator types
