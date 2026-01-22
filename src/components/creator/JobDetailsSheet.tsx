@@ -55,6 +55,8 @@ const getStatusBadgeVariant = (status: Job["status"]) => {
       return "bg-blue-100 text-blue-700 hover:bg-blue-100";
     case "In Progress":
       return "bg-amber-100 text-amber-700 hover:bg-amber-100";
+    case "In Review":
+      return "bg-purple-100 text-purple-700 hover:bg-purple-100";
     case "Approved":
       return "bg-green-100 text-green-700 hover:bg-green-100";
     case "Rejected":
@@ -71,7 +73,7 @@ const TypeIcon = ({ type }: { type: Job["type"] }) => {
   return <Image className="h-4 w-4 text-muted-foreground" />;
 };
 
-const STATUS_STEPS = ["Submitted", "In Progress", "Approved"] as const;
+const STATUS_STEPS = ["Submitted", "In Progress", "In Review", "Approved"] as const;
 
 const getStepStatus = (
   currentStatus: Job["status"],
@@ -400,7 +402,7 @@ export const JobDetailsSheet = ({
             </CardContent>
           </Card>
 
-          {(job.status === "In Progress" || job.status === "Approved") && (
+          {(job.status === "In Progress" || job.status === "In Review" || job.status === "Approved") && (
             <Card className="rounded-2xl border border-border/60 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">

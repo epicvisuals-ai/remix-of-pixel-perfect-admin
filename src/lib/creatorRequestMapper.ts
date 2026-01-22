@@ -44,7 +44,7 @@ export interface Job {
   company: string;
   type: "Image" | "Video";
   budget: number;
-  status: "Submitted" | "In Progress" | "Approved" | "Rejected";
+  status: "Submitted" | "In Progress" | "In Review" | "Approved" | "Rejected";
   createdAt: Date;
   brief: string;
   tone: string;
@@ -66,6 +66,9 @@ export const mapApiRequestToJob = (request: CreatorRequestItem): Job => {
     submitted: "Submitted",
     "in progress": "In Progress",
     in_progress: "In Progress",
+    "in review": "In Review",
+    in_review: "In Review",
+    "in-review": "In Review",
     approved: "Approved",
     rejected: "Rejected",
   };
