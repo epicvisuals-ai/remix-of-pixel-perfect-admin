@@ -94,7 +94,7 @@ const getStepStatus = (
 
 const StatusTimeline = ({ status }: { status: Job["status"] }) => {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between px-4">
       {STATUS_STEPS.map((step, index) => {
         const stepStatus = getStepStatus(status, step);
         const isLast = index === STATUS_STEPS.length - 1;
