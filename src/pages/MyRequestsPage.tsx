@@ -33,7 +33,13 @@ interface Request {
   } | null;
   contentType: "image" | "video";
   budget: number;
-  status: "Created" | "Submitted" | "In Progress" | "Approved" | "Rejected";
+  status:
+    | "Created"
+    | "Submitted"
+    | "In Progress"
+    | "In Review"
+    | "Approved"
+    | "Rejected";
   createdAt: Date;
   brief: string;
   toneOfVoice?: string;
@@ -61,6 +67,8 @@ const getStatusBadgeVariant = (status: Request["status"]) => {
       return "bg-blue-100 text-blue-700 hover:bg-blue-100";
     case "In Progress":
       return "bg-amber-100 text-amber-700 hover:bg-amber-100";
+    case "In Review":
+      return "bg-sky-100 text-sky-700 hover:bg-sky-100";
     case "Approved":
       return "bg-green-100 text-green-700 hover:bg-green-100";
     case "Rejected":
@@ -77,6 +85,9 @@ const normalizeStatus = (value?: string): Request["status"] => {
     case "in progress":
     case "in_progress":
       return "In Progress";
+    case "in review":
+    case "in_review":
+      return "In Review";
     case "approved":
       return "Approved";
     case "rejected":
@@ -129,7 +140,7 @@ const MyRequestsPage = () => {
     setIsLoading(true);
 
     if (statusFilter !== "all") {
-      params.status = statusFilter.toLowerCase();
+      params.status = statusFilter.toLowerCase().replace(/\s+/g, "_");
     }
 
     const sortMap: Record<SortOption, { sortBy: string; sortOrder: string }> = {
@@ -237,6 +248,7 @@ const MyRequestsPage = () => {
               <SelectItem value="Created">Created</SelectItem>
               <SelectItem value="Submitted">Submitted</SelectItem>
               <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="In Review">In Review</SelectItem>
               <SelectItem value="Approved">Approved</SelectItem>
               <SelectItem value="Rejected">Rejected</SelectItem>
             </SelectContent>
