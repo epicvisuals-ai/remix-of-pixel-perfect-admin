@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { format } from "date-fns";
 import {
+  AlertCircle,
   Check,
   Circle,
   Clock,
@@ -33,7 +34,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { creatorRequestsApi, deliverablesApi, filesApi } from "@/lib/api";
-import type { Deliverable, Job, Message } from "@/lib/creatorRequestMapper";
+import type { Deliverable, DeliverableInfo, Job, Message } from "@/lib/creatorRequestMapper";
 
 const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return bytes + " B";
@@ -177,6 +178,11 @@ export const JobDetailsSheet = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (!job) return null;
+
+  // Check if any deliverable has revision requested
+  const revisionRequestedDeliverable = job.deliverablesInfo?.find(
+    (d) => d.status?.toLowerCase() === "revision_requested"
+  );
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
@@ -428,6 +434,23 @@ export const JobDetailsSheet = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {revisionRequestedDeliverable && (
+                  <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
+                          Revision Requested
+                        </h4>
+                        {revisionRequestedDeliverable.revisionFeedback && (
+                          <p className="text-sm text-red-700 dark:text-red-300">
+                            {revisionRequestedDeliverable.revisionFeedback}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {job.status === "In Progress" && (
                   <div
                     className={`border-2 border-dashed border-primary/30 rounded-2xl p-6 text-center bg-muted/30 transition-colors ${
