@@ -61,6 +61,7 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import api, { requestApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import PortfolioPreviewModal, {
   PortfolioItem,
 } from "@/components/creators/PortfolioPreviewModal";
@@ -318,6 +319,7 @@ export function RequestDetailsSheet({
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const portfolioItems = useMemo<PortfolioItem[]>(() => {
     if (!request?.deliverables) return [];
@@ -630,6 +632,9 @@ export function RequestDetailsSheet({
   const canEditAssignedCreator = requestStatus !== "Approved";
   const currentStatusIndex = getStatusIndex(requestStatus);
   const displayStatus = requestStatus === "In Review" ? "In Progress" : requestStatus;
+  const normalizedRole = user?.role?.toLowerCase() ?? "";
+  const isBrandAdmin = normalizedRole === "brand" || normalizedRole === "admin";
+  const needsBrandReview = isBrandAdmin && normalizedStatus === "in_review";
 
   // Collect all image attachments for lightbox navigation
   const allImageAttachments = comments.flatMap(
@@ -844,12 +849,22 @@ export function RequestDetailsSheet({
                 Created {format(request.createdAt, "MMM d, yyyy")}
               </p>
             </div>
-            <Badge
-              variant="secondary"
-              className={getStatusBadgeVariant(displayStatus)}
-            >
-              {displayStatus}
-            </Badge>
+            <div className="flex flex-col items-end gap-2">
+              {needsBrandReview && (
+                <Badge
+                  variant="outline"
+                  className="border-amber-200 bg-amber-500/10 text-amber-700"
+                >
+                  Need Review
+                </Badge>
+              )}
+              <Badge
+                variant="secondary"
+                className={getStatusBadgeVariant(displayStatus)}
+              >
+                {displayStatus}
+              </Badge>
+            </div>
           </div>
         </SheetHeader>
 
@@ -1439,7 +1454,30 @@ export function RequestDetailsSheet({
               </Button>
             ) : (
               <>
-                {isEditableRequestStatus(requestStatus) && (
+                {needsBrandReview && (
+                  <>
+                    <Button
+                      className="flex-1"
+                      onClick={() => {
+                        setRequestStatus("Approved");
+                        toast({ title: "Request approved." });
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => {
+                        setRequestStatus("Rejected");
+                        toast({ title: "Request rejected.", variant: "destructive" });
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {isEditableRequestStatus(requestStatus) && !needsBrandReview && (
                   <Button variant="outline" className="flex-1" onClick={handleEditRequest}>
                     <Edit2 className="h-4 w-4 mr-2" />
                     Edit Request
