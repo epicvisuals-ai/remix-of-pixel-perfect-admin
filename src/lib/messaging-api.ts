@@ -60,7 +60,9 @@ export interface CreateConversationResponse {
 export interface MessageAttachment {
   id: string;
   fileName: string;
-  fileSize: number;
+  url: string;
+  contentType: string;
+  size: number;
 }
 
 export interface ApiMessage {
@@ -85,7 +87,12 @@ export interface MessagesResponse {
 
 export interface SendMessageRequest {
   content: string;
-  attachments?: { fileId: string }[];
+  attachments?: { id: string }[];
+}
+
+export interface SendMessageWithFilesRequest {
+  content: string;
+  files: File[];
 }
 
 export interface SendMessageResponse {
@@ -124,9 +131,23 @@ export const messagingApi = {
   getMessages: (conversationId: string, params?: { page?: number; limit?: number; before?: string }) =>
     api.get<MessagesResponse>(`/conversations/${conversationId}/messages`, { params }),
 
-  // Send a message
+  // Send a message with JSON (for referencing existing file IDs)
   sendMessage: (conversationId: string, data: SendMessageRequest) =>
     api.post<SendMessageResponse>(`/conversations/${conversationId}/messages`, data),
+
+  // Send a message with file uploads (multipart/form-data)
+  sendMessageWithFiles: (conversationId: string, content: string, files: File[]) => {
+    const formData = new FormData();
+    formData.append('content', content);
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    return api.post<SendMessageResponse>(`/conversations/${conversationId}/messages`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 
   // Mark conversation as read
   markAsRead: (conversationId: string) =>
