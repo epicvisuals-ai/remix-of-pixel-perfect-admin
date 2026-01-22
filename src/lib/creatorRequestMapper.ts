@@ -6,6 +6,8 @@ export interface Deliverable {
   name: string;
   size: string;
   uploadedAt: Date;
+  url?: string;
+  type?: string;
 }
 
 export interface Message {

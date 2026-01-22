@@ -32,6 +32,14 @@ const formatFileSize = (bytes: number): string => {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 };
 
+const getFileIcon = (type?: string) => {
+  if (!type) return File;
+  if (type.startsWith("image/")) return Image;
+  if (type.startsWith("video/")) return Video;
+  if (type.includes("pdf") || type.includes("document")) return FileText;
+  return File;
+};
+
 const getStatusBadgeVariant = (status: Job["status"]) => {
   switch (status) {
     case "Submitted":
@@ -228,6 +236,8 @@ export const JobDetailsSheet = ({
         name: file.name,
         size: formatFileSize(file.size),
         uploadedAt: new Date(),
+        url: URL.createObjectURL(file),
+        type: file.type,
       };
       onAddDeliverable(job.id, newDeliverable);
       toast.success(`Uploaded: ${file.name}`);
@@ -362,34 +372,49 @@ export const JobDetailsSheet = ({
 
                 {job.deliverables.length > 0 && (
                   <div className="space-y-2">
-                    {job.deliverables.map((deliverable) => (
-                      <div
-                        key={deliverable.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {deliverable.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {deliverable.size} • {format(deliverable.uploadedAt, "MMM d, yyyy")}
-                            </p>
+                    {job.deliverables.map((deliverable) => {
+                      const FileIcon = getFileIcon(deliverable.type);
+                      const isImage = deliverable.type?.startsWith("image/");
+
+                      return (
+                        <div
+                          key={deliverable.id}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                              {isImage && deliverable.url ? (
+                                <img
+                                  src={deliverable.url}
+                                  alt={deliverable.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <FileIcon className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">
+                                {deliverable.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {deliverable.size} • {format(deliverable.uploadedAt, "MMM d, yyyy")}
+                              </p>
+                            </div>
                           </div>
+                          {job.status === "In Progress" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 flex-shrink-0"
+                              onClick={() => handleRemoveFile(deliverable.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                            </Button>
+                          )}
                         </div>
-                        {job.status === "In Progress" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 flex-shrink-0"
-                            onClick={() => handleRemoveFile(deliverable.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
