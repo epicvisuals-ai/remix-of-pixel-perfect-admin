@@ -97,6 +97,7 @@ interface Attachment {
   type: "image" | "document";
   url: string;
   size: string;
+  file?: File; // Store original File object for uploading
 }
 
 interface Comment {
@@ -285,6 +286,7 @@ export function RequestDetailsSheet({
   const [assignCreatorError, setAssignCreatorError] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [newComment, setNewComment] = useState("");
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -725,7 +727,7 @@ export function RequestDetailsSheet({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const fileArray = Array.from(files);
@@ -737,6 +739,7 @@ export function RequestDetailsSheet({
           type: isImage ? "image" : "document",
           url: isImage ? URL.createObjectURL(file) : "#",
           size: formatFileSize(file.size),
+          file: file, // Store original File object
         };
       });
       setPendingAttachments((prev) => [...prev, ...newAttachments]);
@@ -804,6 +807,7 @@ export function RequestDetailsSheet({
         type: isImage ? "image" : "document",
         url: isImage ? URL.createObjectURL(file) : "#",
         size: formatFileSize(file.size),
+        file: file, // Store original File object
       };
     });
     setPendingAttachments((prev) => [...prev, ...newAttachments]);
@@ -822,22 +826,56 @@ export function RequestDetailsSheet({
     setPendingAttachments(pendingAttachments.filter((att) => att.id !== id));
   };
 
-  const handleSendComment = () => {
+  const handleSendComment = async () => {
     if (!newComment.trim() && pendingAttachments.length === 0) return;
-    
-    const comment: Comment = {
-      id: `cm${Date.now()}`,
-      authorId: "brand1",
-      authorName: "You",
-      authorRole: "brand",
-      content: newComment.trim(),
-      createdAt: new Date(),
-      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
-    };
-    
-    setComments([...comments, comment]);
-    setNewComment("");
-    setPendingAttachments([]);
+    if (!request?.id || isSendingMessage) return;
+
+    setIsSendingMessage(true);
+
+    try {
+      // Extract File objects from attachments
+      const files = pendingAttachments
+        .map(att => att.file)
+        .filter((file): file is File => file !== undefined);
+
+      // Call the API endpoint
+      const response = await requestApi.sendMessage(
+        request.id,
+        newComment.trim() || null,
+        files.length > 0 ? files : null
+      );
+
+      // Create comment from API response
+      const newCommentObj: Comment = {
+        id: response.data.id,
+        authorId: response.data.sender.id,
+        authorName: `${response.data.sender.firstName} ${response.data.sender.lastName}`,
+        authorAvatar: response.data.sender.avatar || undefined,
+        authorRole: "brand",
+        content: response.data.content,
+        createdAt: new Date(response.data.sentAt),
+        attachments: response.data.attachments.map(att => ({
+          id: att.id,
+          name: att.fileName,
+          type: att.mimeType.startsWith("image/") ? "image" : "document",
+          url: att.url,
+          size: formatFileSize(att.fileSize),
+        })),
+      };
+
+      setComments([...comments, newCommentObj]);
+      setNewComment("");
+      setPendingAttachments([]);
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to send message",
+        description: "Please try again.",
+      });
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -1629,7 +1667,7 @@ export function RequestDetailsSheet({
                   <Button
                     size="icon"
                     onClick={handleSendComment}
-                    disabled={!newComment.trim() && pendingAttachments.length === 0}
+                    disabled={(!newComment.trim() && pendingAttachments.length === 0) || isSendingMessage}
                   >
                     <Send className="h-4 w-4" />
                   </Button>
