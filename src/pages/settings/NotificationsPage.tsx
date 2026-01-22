@@ -49,27 +49,37 @@ const notificationTypes = [
   },
 ];
 
-const deliveryMethods = [
+type DeliveryMethodKey = "inApp" | "sound" | "browser" | "email";
+
+interface DeliveryMethod {
+  key: DeliveryMethodKey;
+  label: string;
+  description: string;
+  icon: typeof Bell;
+  requiresBackend?: boolean;
+}
+
+const deliveryMethods: DeliveryMethod[] = [
   {
-    key: "inApp" as const,
+    key: "inApp",
     label: "In-App Notifications",
     description: "Show notifications in the app",
     icon: Bell,
   },
   {
-    key: "sound" as const,
+    key: "sound",
     label: "Sound Alerts",
     description: "Play a sound for new notifications",
     icon: Volume2,
   },
   {
-    key: "browser" as const,
+    key: "browser",
     label: "Browser Notifications",
     description: "Show browser notifications when inactive",
     icon: BellRing,
   },
   {
-    key: "email" as const,
+    key: "email",
     label: "Email Digest",
     description: "Receive email summaries of notifications",
     icon: Mail,
