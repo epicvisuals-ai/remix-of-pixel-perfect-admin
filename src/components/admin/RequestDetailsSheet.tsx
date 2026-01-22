@@ -978,12 +978,14 @@ export function RequestDetailsSheet({
                   Need Review
                 </Badge>
               )}
-              <Badge
-                variant="secondary"
-                className={getStatusBadgeVariant(displayStatus)}
-              >
-                {displayStatus}
-              </Badge>
+              {!needsBrandReview && (
+                <Badge
+                  variant="secondary"
+                  className={getStatusBadgeVariant(displayStatus)}
+                >
+                  {displayStatus}
+                </Badge>
+              )}
             </div>
           </div>
         </SheetHeader>
