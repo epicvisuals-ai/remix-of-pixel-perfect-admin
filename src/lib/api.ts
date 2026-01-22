@@ -465,3 +465,41 @@ export const notificationPreferencesApi = {
   updatePreferences: (data: UpdateNotificationPreferencesRequest) =>
     api.patch<UpdateNotificationPreferencesResponse>('/notifications/preferences', data),
 };
+
+// File Upload types
+export interface FileUploadResponse {
+  success: boolean;
+  data: {
+    id: string;
+    storageUrl: string;
+    fileName: string;
+  };
+}
+
+// File Upload API functions
+export const filesApi = {
+  uploadFile: (file: File, requestId: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Determine file_type based on file.type
+    let fileType = 'document'; // default
+    if (file.type.startsWith('image/')) {
+      fileType = 'image';
+    } else if (file.type.startsWith('video/')) {
+      fileType = 'video';
+    } else if (file.type.includes('pdf')) {
+      fileType = 'document';
+    }
+
+    formData.append('file_type', fileType);
+    formData.append('context', 'deliverable');
+    formData.append('request_id', requestId);
+
+    return api.post<FileUploadResponse>('/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+};
