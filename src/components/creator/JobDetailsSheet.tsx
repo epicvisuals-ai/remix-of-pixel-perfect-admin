@@ -56,7 +56,7 @@ const getStatusBadgeVariant = (status: Job["status"]) => {
     case "In Progress":
       return "bg-amber-100 text-amber-700 hover:bg-amber-100";
     case "In Review":
-      return "bg-purple-100 text-purple-700 hover:bg-purple-100";
+      return "bg-violet-100 text-violet-700 hover:bg-violet-100";
     case "Approved":
       return "bg-green-100 text-green-700 hover:bg-green-100";
     case "Rejected":
