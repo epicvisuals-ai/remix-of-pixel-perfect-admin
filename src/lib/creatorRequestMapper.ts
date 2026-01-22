@@ -22,6 +22,7 @@ export interface DeliverableFile {
 
 export interface Deliverable {
   id: string;
+  deliverableId?: string;
   name: string;
   size: string;
   uploadedAt: Date;
@@ -87,6 +88,7 @@ export const mapApiRequestToJob = (request: CreatorRequestItem): Job => {
       deliverable.files.forEach((file) => {
         deliverables.push({
           id: file.id,
+          deliverableId: deliverable.id,
           name: file.fileName,
           fileName: file.fileName,
           size: formatFileSize(file.fileSize),
