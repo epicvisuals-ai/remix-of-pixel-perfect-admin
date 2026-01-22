@@ -502,6 +502,14 @@ export interface FileUploadResponse {
   };
 }
 
+// File Delete Response types
+export interface FileDeleteResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}
+
 // File Upload API functions
 export const filesApi = {
   uploadFile: (file: File, requestId: string) => {
@@ -528,4 +536,6 @@ export const filesApi = {
       },
     });
   },
+  deleteFile: (fileId: string) =>
+    api.delete<FileDeleteResponse>(`/files/${fileId}?hardDelete=true`),
 };
