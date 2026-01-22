@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,19 +162,23 @@ export default function FileAttachment({
                   key={file.id}
                   className="flex items-center gap-2 rounded-md border bg-muted/50 px-2 py-1 text-xs"
                 >
-                  <FileIcon className="h-3 w-3 text-muted-foreground" />
-                  <span className="max-w-24 truncate">{file.name}</span>
                   {file.uploading ? (
-                    <div className="h-3 w-12">
-                      <Progress value={file.progress} className="h-1" />
-                    </div>
+                    <>
+                      <Skeleton className="h-3 w-3 rounded-sm" />
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-3 w-8" />
+                    </>
                   ) : (
-                    <button
-                      onClick={() => handleDeleteClick(file.id)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <>
+                      <FileIcon className="h-3 w-3 text-muted-foreground" />
+                      <span className="max-w-24 truncate">{file.name}</span>
+                      <button
+                        onClick={() => handleDeleteClick(file.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </>
                   )}
                 </div>
               );
@@ -258,66 +263,73 @@ export default function FileAttachment({
                 key={file.id}
                 className="flex items-center gap-3 rounded-lg border bg-card p-3"
               >
-                {/* Icon or thumbnail */}
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-                  {isImage && file.url ? (
-                    <img
-                      src={file.url}
-                      alt={file.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <FileIcon className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
+                {file.uploading ? (
+                  <>
+                    {/* Skeleton thumbnail */}
+                    <Skeleton className="h-10 w-10 shrink-0 rounded-md" />
 
-                {/* File info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{file.name}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{formatFileSize(file.size)}</span>
-                    {!file.uploading && (
-                      <>
+                    {/* Skeleton file info */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                      <Progress value={file.progress} className="h-1" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Icon or thumbnail */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                      {isImage && file.url ? (
+                        <img
+                          src={file.url}
+                          alt={file.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <FileIcon className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+
+                    {/* File info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{file.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{formatFileSize(file.size)}</span>
                         <span>•</span>
                         <span>{formatDate(file.uploadedAt)}</span>
-                      </>
-                    )}
-                  </div>
-                  {file.uploading && (
-                    <Progress value={file.progress} className="mt-1 h-1" />
-                  )}
-                </div>
+                      </div>
+                    </div>
 
-                {/* Actions */}
-                {!file.uploading && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {onPreview && (
-                        <DropdownMenuItem onClick={() => onPreview(file)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Preview
+                    {/* Actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onPreview && (
+                          <DropdownMenuItem onClick={() => onPreview(file)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview
+                          </DropdownMenuItem>
+                        )}
+                        {onDownload && (
+                          <DropdownMenuItem onClick={() => onDownload(file)}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(file.id)}
+                          className="text-destructive"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Remove
                         </DropdownMenuItem>
-                      )}
-                      {onDownload && (
-                        <DropdownMenuItem onClick={() => onDownload(file)}>
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteClick(file.id)}
-                        className="text-destructive"
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Remove
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
                 )}
               </div>
             );
