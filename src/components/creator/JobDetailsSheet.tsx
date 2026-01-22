@@ -179,11 +179,6 @@ export const JobDetailsSheet = ({
 
   if (!job) return null;
 
-  // Check if any deliverable has revision requested
-  const revisionRequestedDeliverable = job.deliverablesInfo?.find(
-    (d) => d.status?.toLowerCase() === "revision_requested"
-  );
-
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
@@ -423,119 +418,239 @@ export const JobDetailsSheet = ({
           </Card>
 
           {(job.status === "In Progress" || job.status === "In Review" || job.status === "Approved") && (
-            <Card className="rounded-2xl border border-border/60 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Deliverables
-                </CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
-                  Upload your final files before submitting for review.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {revisionRequestedDeliverable && (
-                  <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
-                          Revision Requested
-                        </h4>
-                        {revisionRequestedDeliverable.revisionFeedback && (
-                          <p className="text-sm text-red-700 dark:text-red-300">
-                            {revisionRequestedDeliverable.revisionFeedback}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {job.status === "In Progress" && (
-                  <div
-                    className={`border-2 border-dashed border-primary/30 rounded-2xl p-6 text-center bg-muted/30 transition-colors ${
-                      isUploading
-                        ? "opacity-60 cursor-not-allowed"
-                        : "cursor-pointer hover:border-primary/60 hover:bg-muted/40"
-                    }`}
-                    onClick={() => !isUploading && fileInputRef.current?.click()}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={handleFileUpload}
-                      accept="image/*,video/*,.pdf,.zip,.psd,.ai,.fig"
-                      disabled={isUploading}
-                    />
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
-                      <Upload className={`h-5 w-5 text-muted-foreground ${isUploading ? "animate-pulse" : ""}`} />
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-foreground">
-                      {isUploading ? "Uploading..." : "Drag and drop or click to upload"}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      MP4, MOV, JPG, PNG, PDF, or design files
-                    </p>
-                  </div>
-                )}
+            <>
+              {job.deliverablesInfo && job.deliverablesInfo.length > 0 ? (
+                // Render multiple deliverables sections
+                job.deliverablesInfo.map((deliverableInfo) => {
+                  // Filter files that belong to this specific deliverable
+                  const deliverableFiles = job.deliverables.filter(
+                    (d) => d.deliverableId === deliverableInfo.id
+                  );
 
-                {job.deliverables.length > 0 && (
-                  <div className="space-y-2">
-                    {job.deliverables.map((deliverable) => {
-                      const FileIcon = getFileIcon(deliverable.type);
-                      const isImage = deliverable.type?.startsWith("image/");
+                  const showUploadArea =
+                    job.status === "In Progress" &&
+                    (deliverableInfo.status?.toLowerCase() === "pending" ||
+                     deliverableInfo.status?.toLowerCase() === "revision_requested");
 
-                      return (
-                        <div
-                          key={deliverable.id}
-                          className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-                              {isImage && deliverable.url ? (
-                                <img
-                                  src={deliverable.url}
-                                  alt={deliverable.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <FileIcon className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">
-                                {deliverable.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {deliverable.size} • {format(deliverable.uploadedAt, "MMM d, yyyy")}
-                              </p>
+                  const hasRevisionFeedback =
+                    deliverableInfo.status?.toLowerCase() === "revision_requested" &&
+                    deliverableInfo.revisionFeedback;
+
+                  return (
+                    <Card key={deliverableInfo.id} className="rounded-2xl border border-border/60 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Upload className="h-4 w-4" />
+                          Deliverables
+                        </CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground">
+                          Upload your final files before submitting for review.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {hasRevisionFeedback && (
+                          <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
+                                  Revision Requested
+                                </h4>
+                                <p className="text-sm text-red-700 dark:text-red-300">
+                                  {deliverableInfo.revisionFeedback}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                          {job.status === "In Progress" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 flex-shrink-0"
-                              onClick={() => handleRemoveFile(deliverable.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        )}
 
-                {job.deliverables.length === 0 && job.status === "Approved" && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No deliverables uploaded
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+                        {showUploadArea && (
+                          <div
+                            className={`border-2 border-dashed border-primary/30 rounded-2xl p-6 text-center bg-muted/30 transition-colors ${
+                              isUploading
+                                ? "opacity-60 cursor-not-allowed"
+                                : "cursor-pointer hover:border-primary/60 hover:bg-muted/40"
+                            }`}
+                            onClick={() => !isUploading && fileInputRef.current?.click()}
+                          >
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={handleFileUpload}
+                              accept="image/*,video/*,.pdf,.zip,.psd,.ai,.fig"
+                              disabled={isUploading}
+                            />
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+                              <Upload className={`h-5 w-5 text-muted-foreground ${isUploading ? "animate-pulse" : ""}`} />
+                            </div>
+                            <p className="mt-3 text-sm font-semibold text-foreground">
+                              {isUploading ? "Uploading..." : "Drag and drop or click to upload"}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              MP4, MOV, JPG, PNG, PDF, or design files
+                            </p>
+                          </div>
+                        )}
+
+                        {deliverableFiles.length > 0 && (
+                          <div className="space-y-2">
+                            {deliverableFiles.map((deliverable) => {
+                              const FileIcon = getFileIcon(deliverable.type);
+                              const isImage = deliverable.type?.startsWith("image/");
+
+                              return (
+                                <div
+                                  key={deliverable.id}
+                                  className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                                      {isImage && deliverable.url ? (
+                                        <img
+                                          src={deliverable.url}
+                                          alt={deliverable.name}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <FileIcon className="h-5 w-5 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium text-foreground truncate">
+                                        {deliverable.name}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {deliverable.size} • {format(deliverable.uploadedAt, "MMM d, yyyy")}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {job.status === "In Progress" && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 flex-shrink-0"
+                                      onClick={() => handleRemoveFile(deliverable.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {deliverableFiles.length === 0 && job.status === "Approved" && (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            No deliverables uploaded
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
+                // Fallback: Show single deliverables section if no deliverablesInfo
+                <Card className="rounded-2xl border border-border/60 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Deliverables
+                    </CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground">
+                      Upload your final files before submitting for review.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {job.status === "In Progress" && (
+                      <div
+                        className={`border-2 border-dashed border-primary/30 rounded-2xl p-6 text-center bg-muted/30 transition-colors ${
+                          isUploading
+                            ? "opacity-60 cursor-not-allowed"
+                            : "cursor-pointer hover:border-primary/60 hover:bg-muted/40"
+                        }`}
+                        onClick={() => !isUploading && fileInputRef.current?.click()}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={handleFileUpload}
+                          accept="image/*,video/*,.pdf,.zip,.psd,.ai,.fig"
+                          disabled={isUploading}
+                        />
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+                          <Upload className={`h-5 w-5 text-muted-foreground ${isUploading ? "animate-pulse" : ""}`} />
+                        </div>
+                        <p className="mt-3 text-sm font-semibold text-foreground">
+                          {isUploading ? "Uploading..." : "Drag and drop or click to upload"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          MP4, MOV, JPG, PNG, PDF, or design files
+                        </p>
+                      </div>
+                    )}
+
+                    {job.deliverables.length > 0 && (
+                      <div className="space-y-2">
+                        {job.deliverables.map((deliverable) => {
+                          const FileIcon = getFileIcon(deliverable.type);
+                          const isImage = deliverable.type?.startsWith("image/");
+
+                          return (
+                            <div
+                              key={deliverable.id}
+                              className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                                  {isImage && deliverable.url ? (
+                                    <img
+                                      src={deliverable.url}
+                                      alt={deliverable.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">
+                                    {deliverable.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {deliverable.size} • {format(deliverable.uploadedAt, "MMM d, yyyy")}
+                                  </p>
+                                </div>
+                              </div>
+                              {job.status === "In Progress" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 flex-shrink-0"
+                                  onClick={() => handleRemoveFile(deliverable.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {job.deliverables.length === 0 && job.status === "Approved" && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No deliverables uploaded
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
           <Card className="rounded-2xl border border-border/60 shadow-sm">
