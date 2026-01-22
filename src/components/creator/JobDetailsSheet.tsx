@@ -32,7 +32,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { creatorRequestsApi, filesApi } from "@/lib/api";
+import { creatorRequestsApi, deliverablesApi, filesApi } from "@/lib/api";
 import type { Deliverable, Job, Message } from "@/lib/creatorRequestMapper";
 
 const formatFileSize = (bytes: number): string => {
@@ -169,6 +169,7 @@ export const JobDetailsSheet = ({
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmittingDeliverable, setIsSubmittingDeliverable] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -231,12 +232,25 @@ export const JobDetailsSheet = ({
     }
   };
 
-  const handleSubmitDeliverable = () => {
+  const handleSubmitDeliverable = async () => {
     if (job.deliverables.length === 0) {
       toast.error("Please upload at least one file before submitting.");
       return;
     }
-    toast.success("Deliverable submitted for review!");
+
+    if (isSubmittingDeliverable) return;
+
+    setIsSubmittingDeliverable(true);
+    try {
+      await deliverablesApi.submitDeliverable(job.id);
+      onStatusChange(job.id, "In Review");
+      toast.success("Deliverable submitted for review!");
+    } catch (error) {
+      console.error("Failed to submit deliverable:", error);
+      toast.error("Failed to submit deliverable. Please try again.");
+    } finally {
+      setIsSubmittingDeliverable(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -562,9 +576,13 @@ export const JobDetailsSheet = ({
           </Card>
 
           {job.status === "In Progress" && (
-            <Button onClick={handleSubmitDeliverable} className="w-full rounded-xl">
+            <Button
+              onClick={handleSubmitDeliverable}
+              className="w-full rounded-xl"
+              disabled={isSubmittingDeliverable}
+            >
               <Upload className="h-4 w-4 mr-2" />
-              Submit Deliverable
+              {isSubmittingDeliverable ? "Submitting..." : "Submit Deliverable"}
             </Button>
           )}
 
