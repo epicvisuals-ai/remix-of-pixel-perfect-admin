@@ -99,7 +99,7 @@ export default function MessagePopup({ open, onOpenChange, creator }: MessagePop
               name: att.fileName,
               type: "document" as const,
               url: "",
-              size: att.fileSize,
+              size: att.size || 0,
               mimeType: "application/octet-stream",
             })),
           }));
