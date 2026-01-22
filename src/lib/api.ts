@@ -539,3 +539,9 @@ export const filesApi = {
   deleteFile: (fileId: string) =>
     api.delete<FileDeleteResponse>(`/files/${fileId}?hardDelete=true`),
 };
+
+// Deliverables API functions
+export const deliverablesApi = {
+  submitDeliverable: (deliverableId: string) =>
+    api.post(`/deliverables/${deliverableId}/submit`),
+};
