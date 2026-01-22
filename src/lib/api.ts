@@ -171,6 +171,32 @@ export interface RejectRequestResponse {
   };
 }
 
+export interface RequestMessageAttachment {
+  id: string;
+  fileName: string;
+  url: string;
+  fileType: string;
+  mimeType: string;
+  fileSize: number;
+}
+
+export interface RequestMessageCreateResponse {
+  success: boolean;
+  data: {
+    id: string;
+    requestId: string;
+    content: string;
+    sentAt: string;
+    sender: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      avatar: string | null;
+    };
+    attachments: RequestMessageAttachment[];
+  };
+}
+
 export const requestApi = {
   createRequest: (data: CreateRequestPayload) => api.post('/requests', data),
   submitRequest: (requestId: string) => api.post(`/requests/${requestId}/submit`),
@@ -179,6 +205,22 @@ export const requestApi = {
     api.post<ApproveRequestResponse>(`/requests/${requestId}/approve`),
   rejectRequest: (requestId: string) =>
     api.post<RejectRequestResponse>(`/requests/${requestId}/reject`),
+  sendMessage: (requestId: string, content: string | null, files: File[] | null) => {
+    const formData = new FormData();
+    if (content) {
+      formData.append('content', content);
+    }
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+    }
+    return api.post<RequestMessageCreateResponse>(`/requests/${requestId}/messages`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 // Creator types
