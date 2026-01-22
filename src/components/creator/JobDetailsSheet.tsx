@@ -16,6 +16,15 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -160,6 +169,9 @@ export const JobDetailsSheet = ({
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!job) return null;
 
@@ -266,8 +278,32 @@ export const JobDetailsSheet = ({
   };
 
   const handleRemoveFile = (deliverableId: string) => {
-    onRemoveDeliverable(job.id, deliverableId);
-    toast.info("File removed.");
+    setFileToDelete(deliverableId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!fileToDelete || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const response = await filesApi.deleteFile(fileToDelete);
+      if (response.data.success) {
+        onRemoveDeliverable(job.id, fileToDelete);
+        toast.success(response.data.data.message || "File deleted successfully");
+        setIsDeleteDialogOpen(false);
+        setFileToDelete(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete file:", error);
+      const response = (error as { response?: { status?: number; data?: { detail?: string } } }).response;
+      if (response?.status === 404) {
+        toast.error("File not found");
+      } else {
+        toast.error(response?.data?.detail ?? "Unable to delete file");
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -573,6 +609,21 @@ export const JobDetailsSheet = ({
           </div>
         </div>
       </SheetContent>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Yes"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 };

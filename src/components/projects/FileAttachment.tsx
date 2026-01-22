@@ -19,6 +19,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 export interface FileAttachmentItem {
@@ -77,6 +86,8 @@ export default function FileAttachment({
   compact = false,
 }: FileAttachmentProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -122,6 +133,19 @@ export default function FileAttachment({
     }
   };
 
+  const handleDeleteClick = (fileId: string) => {
+    setFileToDelete(fileId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (fileToDelete) {
+      onRemove(fileToDelete);
+      setIsDeleteDialogOpen(false);
+      setFileToDelete(null);
+    }
+  };
+
   const canUploadMore = attachments.length < maxFiles && !disabled;
 
   if (compact) {
@@ -145,7 +169,7 @@ export default function FileAttachment({
                     </div>
                   ) : (
                     <button
-                      onClick={() => onRemove(file.id)}
+                      onClick={() => handleDeleteClick(file.id)}
                       className="text-muted-foreground hover:text-destructive"
                     >
                       <X className="h-3 w-3" />
@@ -286,7 +310,7 @@ export default function FileAttachment({
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
-                        onClick={() => onRemove(file.id)}
+                        onClick={() => handleDeleteClick(file.id)}
                         className="text-destructive"
                       >
                         <X className="mr-2 h-4 w-4" />
@@ -300,6 +324,21 @@ export default function FileAttachment({
           })}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              Yes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
