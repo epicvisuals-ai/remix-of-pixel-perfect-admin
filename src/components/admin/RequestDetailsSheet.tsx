@@ -329,6 +329,9 @@ export function RequestDetailsSheet({
   const [revisionFeedback, setRevisionFeedback] = useState("");
   const [isApprovingDeliverable, setIsApprovingDeliverable] = useState<string | null>(null);
   const [isRequestingRevision, setIsRequestingRevision] = useState(false);
+
+  // Request approval state
+  const [isApprovingRequest, setIsApprovingRequest] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -479,6 +482,29 @@ export function RequestDetailsSheet({
       setIsRequestingRevision(false);
     }
   }, [revisionDeliverableId, revisionFeedback, toast]);
+
+  // Approve request handler
+  const handleApproveRequest = useCallback(async () => {
+    if (!request?.id || isApprovingRequest) return;
+    setIsApprovingRequest(true);
+    try {
+      const response = await requestApi.approveRequest(request.id);
+      if (response.data?.success) {
+        setRequestStatus("Approved");
+        toast({
+          title: "Request approved successfully.",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to approve request:", error);
+      toast({
+        title: "Failed to approve request.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApprovingRequest(false);
+    }
+  }, [request?.id, isApprovingRequest, toast]);
 
   const openRevisionDialog = (deliverableId: string) => {
     setRevisionDeliverableId(deliverableId);
@@ -1702,12 +1728,10 @@ export function RequestDetailsSheet({
                   <>
                     <Button
                       className="flex-1"
-                      onClick={() => {
-                        setRequestStatus("Approved");
-                        toast({ title: "Request approved." });
-                      }}
+                      onClick={handleApproveRequest}
+                      disabled={isApprovingRequest}
                     >
-                      Approve
+                      {isApprovingRequest ? "Approving..." : "Approve"}
                     </Button>
                     <Button
                       variant="destructive"
