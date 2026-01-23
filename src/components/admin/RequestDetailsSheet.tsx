@@ -253,6 +253,21 @@ const formatFileSize = (bytes: number): string => {
 const formatDateInputValue = (value?: Date) =>
   value ? format(value, "yyyy-MM-dd") : "";
 
+const getTomorrowDateInputValue = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return format(tomorrow, "yyyy-MM-dd");
+};
+
+const isDateBeforeTomorrow = (value: string) => {
+  const candidate = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(candidate.getTime())) return false;
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return candidate < tomorrow;
+};
+
 const normalizeRequestStatus = (status: Request["status"]) =>
   status.toLowerCase().replace(/\s+/g, "_");
 
@@ -354,6 +369,7 @@ export function RequestDetailsSheet({
         }))
     );
   }, [deliverables]);
+  const tomorrowDateInputValue = useMemo(() => getTomorrowDateInputValue(), []);
 
   // Reset zoom/pan when changing images or closing lightbox
   useEffect(() => {
@@ -730,6 +746,13 @@ export function RequestDetailsSheet({
 
     const originalDeadline = formatDateInputValue(requestDetails.deadline);
     if (editDeadline !== originalDeadline) {
+      if (editDeadline && shouldEnforceDeadlineMin && isDateBeforeTomorrow(editDeadline)) {
+        toast({
+          title: "Deadline must be at least tomorrow.",
+          variant: "destructive",
+        });
+        return;
+      }
       updates.deadline = editDeadline ? editDeadline : null;
     }
 
@@ -863,6 +886,7 @@ export function RequestDetailsSheet({
   if (!request) return null;
 
   const normalizedStatus = normalizeRequestStatus(requestStatus);
+  const shouldEnforceDeadlineMin = normalizedStatus === "in_review";
   const canEditAllFields = isFullEditStatus(requestStatus);
   const canEditDeadlineOnly = normalizedStatus === "in_progress";
   const canEditAssignedCreator = requestStatus !== "Approved";
@@ -1374,6 +1398,7 @@ export function RequestDetailsSheet({
                         type="date"
                         value={editDeadline}
                         onChange={(event) => setEditDeadline(event.target.value)}
+                        min={shouldEnforceDeadlineMin ? tomorrowDateInputValue : undefined}
                         className="h-8 text-sm"
                       />
                     ) : (
