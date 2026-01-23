@@ -265,7 +265,7 @@ const isEditableRequestStatus = (status: Request["status"]) => {
 
 const isFullEditStatus = (status: Request["status"]) => {
   const normalized = normalizeRequestStatus(status);
-  return ["created", "submitter", "submitted", "in_review", "rejected"].includes(normalized);
+  return ["created", "submitter", "submitted", "rejected"].includes(normalized);
 };
 
 const canDeleteRequestStatus = (status: Request["status"]) => {
