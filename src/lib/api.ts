@@ -175,18 +175,16 @@ export interface RequestMessageAttachment {
   id: string;
   fileName: string;
   url: string;
-  fileType: string;
-  mimeType: string;
-  fileSize: number;
+  contentType: string;
+  size: number;
 }
 
 export interface RequestMessageCreateResponse {
   success: boolean;
   data: {
     id: string;
-    requestId: string;
     content: string;
-    sentAt: string;
+    createdAt: string;
     sender: {
       id: string;
       firstName: string;

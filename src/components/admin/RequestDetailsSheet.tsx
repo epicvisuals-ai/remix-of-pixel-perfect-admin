@@ -956,13 +956,13 @@ export function RequestDetailsSheet({
         authorAvatar: response.data.sender.avatar || undefined,
         authorRole: "brand",
         content: response.data.content,
-        createdAt: new Date(response.data.sentAt),
+        createdAt: new Date(response.data.createdAt),
         attachments: response.data.attachments.map(att => ({
           id: att.id,
           name: att.fileName,
-          type: att.mimeType.startsWith("image/") ? "image" : "document",
+          type: att.contentType.startsWith("image/") ? "image" : "document",
           url: att.url,
-          size: formatFileSize(att.fileSize),
+          size: formatFileSize(att.size),
         })),
       };
 
