@@ -444,6 +444,25 @@ export interface RequestStatsResponse {
 }
 
 // Creator Requests API functions
+export interface RevisionRequestedItem {
+  id: string;
+  contentType: string;
+  brief: string;
+  toneOfVoice: string;
+  budget: number;
+  deadline: string | null;
+  status: string;
+  createdAt: string;
+  creator: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  };
+  companyName: string | null;
+  companyLogoUrl: string | null;
+}
+
 export const creatorRequestsApi = {
   getRequests: (params?: {
     page?: number;
@@ -473,6 +492,10 @@ export const creatorRequestsApi = {
     api.post<DeclineRequestResponse>(`/requests/${requestId}/decline`),
   getRequestStats: () =>
     api.get<RequestStatsResponse>('/creators/me/request-stats'),
+  getRevisionRequested: () =>
+    api.get<{ success: boolean; data: RevisionRequestedItem[]; meta: { page: number; limit: number; total: number } }>(
+      '/creator/requests/dashboard/revision-requested'
+    ),
 };
 
 // Notification types
