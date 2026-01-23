@@ -577,7 +577,7 @@ export interface FileDeleteResponse {
 
 // File Upload API functions
 export const filesApi = {
-  uploadFile: (file: File, requestId: string) => {
+  uploadFile: (file: File, requestId: string, deliverableId?: string) => {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -594,6 +594,10 @@ export const filesApi = {
     formData.append('file_type', fileType);
     formData.append('context', 'deliverable');
     formData.append('request_id', requestId);
+
+    if (deliverableId) {
+      formData.append('deliverable_id', deliverableId);
+    }
 
     return api.post<FileUploadResponse>('/files/upload', formData, {
       headers: {
