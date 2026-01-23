@@ -501,21 +501,31 @@ export function RequestDetailsSheet({
       setDeliverables((prev) =>
         prev.map((d) => {
           if (d.id === deliverableId) {
-            const newFiles = uploadedFiles.map((fileData) => ({
-              id: fileData.id,
-              fileName: fileData.fileName,
-              fileType: fileData.fileType ?? 'document',
-              mimeType: fileData.mimeType ?? '',
-              fileSize: fileData.fileSize ?? 0,
-              url: fileData.storageUrl,
-              thumbnailUrl: fileData.thumbnailUrl ?? null,
-              uploadedBy: {
-                id: user?.id ?? '',
-                firstName: user?.first_name ?? '',
-                lastName: user?.last_name ?? '',
-              },
-              createdAt: new Date(),
-            }));
+            const newFiles = uploadedFiles.map((fileData) => {
+              // Determine file type from file name extension
+              const extension = fileData.fileName.split('.').pop()?.toLowerCase() || '';
+              const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+              const videoExtensions = ['mp4', 'mov', 'avi', 'webm'];
+              let fileType = 'document';
+              if (imageExtensions.includes(extension)) fileType = 'image';
+              else if (videoExtensions.includes(extension)) fileType = 'video';
+
+              return {
+                id: fileData.id,
+                fileName: fileData.fileName,
+                fileType: fileType,
+                mimeType: '',
+                fileSize: 0,
+                url: fileData.storageUrl,
+                thumbnailUrl: null,
+                uploadedBy: {
+                  id: user?.id ?? '',
+                  firstName: user?.first_name ?? '',
+                  lastName: user?.last_name ?? '',
+                },
+                createdAt: new Date(),
+              };
+            });
             return { ...d, files: [...d.files, ...newFiles] };
           }
           return d;
@@ -949,15 +959,16 @@ export function RequestDetailsSheet({
       );
 
       // Create comment from API response
+      const responseData = response.data.data;
       const newCommentObj: Comment = {
-        id: response.data.id,
-        authorId: response.data.sender.id,
-        authorName: `${response.data.sender.firstName} ${response.data.sender.lastName}`,
-        authorAvatar: response.data.sender.avatar || undefined,
+        id: responseData.id,
+        authorId: responseData.sender.id,
+        authorName: `${responseData.sender.firstName} ${responseData.sender.lastName}`,
+        authorAvatar: responseData.sender.avatar || undefined,
         authorRole: "brand",
-        content: response.data.content,
-        createdAt: new Date(response.data.createdAt),
-        attachments: response.data.attachments.map(att => ({
+        content: responseData.content,
+        createdAt: new Date(responseData.createdAt),
+        attachments: responseData.attachments.map(att => ({
           id: att.id,
           name: att.fileName,
           type: att.contentType.startsWith("image/") ? "image" : "document",
