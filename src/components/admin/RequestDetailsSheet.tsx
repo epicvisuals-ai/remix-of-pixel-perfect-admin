@@ -64,12 +64,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import api, { requestApi, deliverablesApi } from "@/lib/api";
+import api, { requestApi, deliverablesApi, filesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import PortfolioPreviewModal, {
   PortfolioItem,
 } from "@/components/creators/PortfolioPreviewModal";
+import FileAttachment, { FileAttachmentItem } from "@/components/projects/FileAttachment";
 
 interface Creator {
   id: string;
@@ -482,6 +483,82 @@ export function RequestDetailsSheet({
       setIsRequestingRevision(false);
     }
   }, [revisionDeliverableId, revisionFeedback, toast]);
+
+  // Deliverable file upload handlers
+  const handleDeliverableFileUpload = useCallback(async (deliverableId: string, files: File[]) => {
+    if (!request?.id || files.length === 0) return;
+
+    try {
+      // Upload each file and collect the results
+      const uploadPromises = files.map(async (file) => {
+        const response = await filesApi.uploadFile(file, request.id, deliverableId);
+        return response.data.data;
+      });
+
+      const uploadedFiles = await Promise.all(uploadPromises);
+
+      // Update the deliverables state with the new files
+      setDeliverables((prev) =>
+        prev.map((d) => {
+          if (d.id === deliverableId) {
+            const newFiles = uploadedFiles.map((fileData) => ({
+              id: fileData.id,
+              fileName: fileData.fileName,
+              fileType: fileData.fileType ?? 'document',
+              mimeType: fileData.mimeType ?? '',
+              fileSize: fileData.fileSize ?? 0,
+              url: fileData.storageUrl,
+              thumbnailUrl: fileData.thumbnailUrl ?? null,
+              uploadedBy: {
+                id: user?.id ?? '',
+                firstName: user?.first_name ?? '',
+                lastName: user?.last_name ?? '',
+              },
+              createdAt: new Date(),
+            }));
+            return { ...d, files: [...d.files, ...newFiles] };
+          }
+          return d;
+        })
+      );
+
+      toast({
+        title: `${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} uploaded successfully.`,
+      });
+    } catch (error) {
+      console.error("Failed to upload files:", error);
+      toast({
+        title: "Failed to upload files.",
+        variant: "destructive",
+      });
+    }
+  }, [request?.id, user, toast]);
+
+  const handleDeliverableFileRemove = useCallback(async (deliverableId: string, fileId: string) => {
+    try {
+      await filesApi.deleteFile(fileId);
+
+      // Update the deliverables state to remove the file
+      setDeliverables((prev) =>
+        prev.map((d) => {
+          if (d.id === deliverableId) {
+            return { ...d, files: d.files.filter((f) => f.id !== fileId) };
+          }
+          return d;
+        })
+      );
+
+      toast({
+        title: "File removed successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to remove file:", error);
+      toast({
+        title: "Failed to remove file.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   // Approve request handler
   const handleApproveRequest = useCallback(async () => {
@@ -1336,7 +1413,7 @@ export function RequestDetailsSheet({
           )}
 
           {/* Deliverables Section */}
-          {deliverables.length > 0 && deliverables.some(d => d.files.length > 0) && (
+          {deliverables.length > 0 && (
             <>
               <Separator />
               <div className="space-y-4">
@@ -1347,153 +1424,127 @@ export function RequestDetailsSheet({
                   </h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Review submitted files and approve or request revisions.
+                  Upload your final files before submitting for review.
                 </p>
 
                 <div className="space-y-4">
-                  {deliverables.filter(d => d.files.length > 0).map((deliverable) => (
-                    <div
-                      key={deliverable.id}
-                      className="rounded-xl border border-border bg-card overflow-hidden"
-                    >
-                      {/* Deliverable Header */}
-                      <div className="flex items-center justify-between p-3 bg-muted/30 border-b border-border">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-foreground">
-                            {deliverable.name}
-                          </span>
-                          {getDeliverableStatusBadge(deliverable.status)}
+                  {deliverables.map((deliverable) => {
+                    // Convert DeliverableFile to FileAttachmentItem
+                    const attachments: FileAttachmentItem[] = deliverable.files.map((file) => ({
+                      id: file.id,
+                      name: file.fileName,
+                      size: file.fileSize,
+                      type: file.mimeType,
+                      uploadedAt: file.createdAt,
+                      url: file.url,
+                    }));
+
+                    return (
+                      <div
+                        key={deliverable.id}
+                        className="rounded-xl border border-border bg-card overflow-hidden"
+                      >
+                        {/* Deliverable Header */}
+                        <div className="flex items-center justify-between p-3 bg-muted/30 border-b border-border">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm text-foreground">
+                              {deliverable.name}
+                            </span>
+                            {getDeliverableStatusBadge(deliverable.status)}
+                          </div>
+                          {deliverable.dueDate && (
+                            <span className="text-xs text-muted-foreground">
+                              Due: {format(deliverable.dueDate, "MMM d, yyyy")}
+                            </span>
+                          )}
                         </div>
-                        {deliverable.dueDate && (
-                          <span className="text-xs text-muted-foreground">
-                            Due: {format(deliverable.dueDate, "MMM d, yyyy")}
-                          </span>
+
+                        {/* Deliverable Description */}
+                        {deliverable.description && (
+                          <div className="px-3 py-2 border-b border-border bg-muted/10">
+                            <p className="text-sm text-muted-foreground">
+                              {deliverable.description}
+                            </p>
+                          </div>
                         )}
-                      </div>
 
-                      {/* Deliverable Description */}
-                      {deliverable.description && (
-                        <div className="px-3 py-2 border-b border-border bg-muted/10">
-                          <p className="text-sm text-muted-foreground">
-                            {deliverable.description}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Files */}
-                      <div className="p-3 space-y-2">
-                        {deliverable.files.map((file) => {
-                          const isImage =
-                            file.fileType === "image" || file.mimeType?.startsWith("image/");
-                          const FileIcon = isImage ? Image : FileText;
-                          const portfolioItem = isImage
-                            ? portfolioItems.find((item) => item.id === file.id) ?? null
-                            : null;
-                          const handlePreview = () => {
-                            if (!portfolioItem) return;
-                            setSelectedPortfolioItem(portfolioItem);
-                            setPortfolioPreviewOpen(true);
-                          };
-
-                          return (
-                            <div
-                              key={file.id}
-                              role={portfolioItem ? "button" : undefined}
-                              tabIndex={portfolioItem ? 0 : -1}
-                              onClick={portfolioItem ? handlePreview : undefined}
-                              onKeyDown={
-                                portfolioItem
-                                  ? (event) => {
-                                      if (event.key === "Enter" || event.key === " ") {
-                                        event.preventDefault();
-                                        handlePreview();
-                                      }
-                                    }
-                                  : undefined
-                              }
-                              className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/60 ${
-                                portfolioItem ? "cursor-pointer hover:bg-muted" : ""
-                              }`}
-                            >
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-background">
-                                {isImage && file.url ? (
-                                  <img
-                                    src={file.url}
-                                    alt={file.fileName}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <FileIcon className="h-5 w-5 text-muted-foreground" />
+                        {/* Revision Requested Notice */}
+                        {deliverable.status.toLowerCase() === "revision_requested" && (
+                          <div className="px-3 py-2 border-b border-border bg-red-50 dark:bg-red-950/20">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                                  Revision Requested
+                                </p>
+                                {(deliverable as any).revisionFeedback && (
+                                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                    {(deliverable as any).revisionFeedback}
+                                  </p>
                                 )}
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-foreground truncate">
-                                  {file.fileName}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatFileSize(file.fileSize)} • {format(file.createdAt, "MMM d, yyyy")}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 flex-shrink-0"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  window.open(file.url, "_blank");
-                                }}
-                              >
-                                <Download className="h-4 w-4 text-muted-foreground" />
-                              </Button>
                             </div>
-                          );
-                        })}
+                          </div>
+                        )}
+
+                        {/* File Upload Section */}
+                        <div className="p-3">
+                          <FileAttachment
+                            attachments={attachments}
+                            onUpload={(files) => handleDeliverableFileUpload(deliverable.id, files)}
+                            onRemove={(fileId) => handleDeliverableFileRemove(deliverable.id, fileId)}
+                            onDownload={(attachment) => window.open(attachment.url, "_blank")}
+                            maxFiles={10}
+                            maxSize={100}
+                            accept="image/*,video/*,.pdf,.doc,.docx"
+                          />
+                        </div>
+
+                        {/* Action Buttons for submitted deliverables */}
+                        {canReviewDeliverable(deliverable.status) && (
+                          <div className="flex gap-2 p-3 border-t border-border bg-muted/10">
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleApproveDeliverable(deliverable.id)}
+                              disabled={isApprovingDeliverable === deliverable.id}
+                            >
+                              {isApprovingDeliverable === deliverable.id ? (
+                                <>
+                                  <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                                  Approving...
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Approve
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => openRevisionDialog(deliverable.id)}
+                            >
+                              <RotateCw className="h-4 w-4 mr-2" />
+                              Request Revision
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Approved info */}
+                        {deliverable.status.toLowerCase() === "approved" && deliverable.approvedAt && (
+                          <div className="flex items-center gap-2 p-3 border-t border-border bg-green-50 dark:bg-green-950/20">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="text-sm text-green-700 dark:text-green-400">
+                              Approved {formatDistanceToNow(deliverable.approvedAt, { addSuffix: true })}
+                            </span>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Action Buttons for submitted deliverables */}
-                      {canReviewDeliverable(deliverable.status) && (
-                        <div className="flex gap-2 p-3 border-t border-border bg-muted/10">
-                          <Button
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleApproveDeliverable(deliverable.id)}
-                            disabled={isApprovingDeliverable === deliverable.id}
-                          >
-                            {isApprovingDeliverable === deliverable.id ? (
-                              <>
-                                <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                                Approving...
-                              </>
-                            ) : (
-                              <>
-                                <Check className="h-4 w-4 mr-2" />
-                                Approve
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => openRevisionDialog(deliverable.id)}
-                          >
-                            <RotateCw className="h-4 w-4 mr-2" />
-                            Request Revision
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Approved info */}
-                      {deliverable.status.toLowerCase() === "approved" && deliverable.approvedAt && (
-                        <div className="flex items-center gap-2 p-3 border-t border-border bg-green-50 dark:bg-green-950/20">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="text-sm text-green-700 dark:text-green-400">
-                            Approved {formatDistanceToNow(deliverable.approvedAt, { addSuffix: true })}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </>
