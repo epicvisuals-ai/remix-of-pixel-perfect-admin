@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image, Video, Plus, Search, ArrowUpDown, Filter } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import api from "@/lib/api";
 import {
   Table,
@@ -76,6 +76,32 @@ const getStatusBadgeVariant = (status: Request["status"]) => {
     default:
       return "";
   }
+};
+
+const getDeadlineColor = (deadline?: Date) => {
+  if (!deadline) {
+    return "text-muted-foreground";
+  }
+
+  const now = new Date();
+  const diffMs = deadline.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  const diffDays = diffHours / 24;
+
+  // Overdue or within 24 hours - urgent red
+  if (diffDays < 1) {
+    return "text-red-600 font-semibold";
+  }
+  // Within 3 days - warning orange
+  if (diffDays < 3) {
+    return "text-orange-600 font-medium";
+  }
+  // Within 7 days - caution yellow
+  if (diffDays < 7) {
+    return "text-yellow-600 font-medium";
+  }
+  // More than 7 days - normal green
+  return "text-green-600";
 };
 
 const normalizeStatus = (value?: string): Request["status"] => {
@@ -281,6 +307,7 @@ const MyRequestsPage = () => {
               <TableHead className="text-muted-foreground">Status</TableHead>
               <TableHead className="text-muted-foreground">Creator</TableHead>
               <TableHead className="text-muted-foreground">Created</TableHead>
+              <TableHead className="text-muted-foreground">Deadline</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -311,12 +338,15 @@ const MyRequestsPage = () => {
                   <TableCell>
                     <Skeleton className="h-4 w-24" />
                   </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : requests.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No requests found matching your criteria.
@@ -380,6 +410,11 @@ const MyRequestsPage = () => {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDistanceToNow(request.createdAt, { addSuffix: true })}
+                  </TableCell>
+                  <TableCell className={getDeadlineColor(request.deadline)}>
+                    {request.deadline
+                      ? format(request.deadline, "MMM d, yyyy")
+                      : "No deadline"}
                   </TableCell>
                 </TableRow>
               ))
