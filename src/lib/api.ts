@@ -348,7 +348,7 @@ export interface CreatorRequestItem {
   brief: string;
   toneOfVoice: string;
   budget: number;
-  deadline: string;
+  deadline: string | null;
   status: string;
   createdAt: string;
   creator: {
@@ -357,6 +357,8 @@ export interface CreatorRequestItem {
     lastName: string;
     avatar: string;
   };
+  companyName?: string | null;
+  companyLogoUrl?: string | null;
   deliverables?: Array<{
     id: string;
     name: string;
@@ -443,26 +445,6 @@ export interface RequestStatsResponse {
   data: RequestStatsData;
 }
 
-// Creator Requests API functions
-export interface RevisionRequestedItem {
-  id: string;
-  contentType: string;
-  brief: string;
-  toneOfVoice: string;
-  budget: number;
-  deadline: string | null;
-  status: string;
-  createdAt: string;
-  creator: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    avatar: string;
-  };
-  companyName: string | null;
-  companyLogoUrl: string | null;
-}
-
 export const creatorRequestsApi = {
   getRequests: (params?: {
     page?: number;
@@ -493,7 +475,7 @@ export const creatorRequestsApi = {
   getRequestStats: () =>
     api.get<RequestStatsResponse>('/creators/me/request-stats'),
   getRevisionRequested: () =>
-    api.get<{ success: boolean; data: RevisionRequestedItem[]; meta: { page: number; limit: number; total: number } }>(
+    api.get<{ success: boolean; data: CreatorRequestItem[]; meta: { page: number; limit: number; total: number } }>(
       '/creator/requests/dashboard/revision-requested'
     ),
 };
