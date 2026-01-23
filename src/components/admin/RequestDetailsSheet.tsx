@@ -1505,6 +1505,18 @@ export function RequestDetailsSheet({
                             onUpload={(files) => handleDeliverableFileUpload(deliverable.id, files)}
                             onRemove={(fileId) => handleDeliverableFileRemove(deliverable.id, fileId)}
                             onDownload={(attachment) => window.open(attachment.url, "_blank")}
+                            onPreview={(attachment) => {
+                              // Convert FileAttachmentItem to Attachment format for lightbox
+                              const imageAttachment: Attachment = {
+                                id: attachment.id,
+                                name: attachment.name,
+                                type: "image",
+                                url: attachment.url || "",
+                                size: formatFileSize(attachment.size),
+                              };
+                              openLightbox(imageAttachment);
+                            }}
+                            reviewMode={isBrandAdmin}
                             maxFiles={10}
                             maxSize={100}
                             accept="image/*,video/*,.pdf,.doc,.docx"

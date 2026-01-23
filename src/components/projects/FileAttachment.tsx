@@ -53,6 +53,7 @@ interface FileAttachmentProps {
   accept?: string;
   disabled?: boolean;
   compact?: boolean;
+  reviewMode?: boolean; // For brand/admin - hides upload and delete options
 }
 
 function formatFileSize(bytes: number): string {
@@ -85,6 +86,7 @@ export default function FileAttachment({
   accept = "*",
   disabled = false,
   compact = false,
+  reviewMode = false,
 }: FileAttachmentProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -147,7 +149,7 @@ export default function FileAttachment({
     }
   };
 
-  const canUploadMore = attachments.length < maxFiles && !disabled;
+  const canUploadMore = attachments.length < maxFiles && !disabled && !reviewMode;
 
   if (compact) {
     return (
@@ -172,12 +174,14 @@ export default function FileAttachment({
                     <>
                       <FileIcon className="h-3 w-3 text-muted-foreground" />
                       <span className="max-w-24 truncate">{file.name}</span>
-                      <button
-                        onClick={() => handleDeleteClick(file.id)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      {!reviewMode && (
+                        <button
+                          onClick={() => handleDeleteClick(file.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -278,7 +282,13 @@ export default function FileAttachment({
                 ) : (
                   <>
                     {/* Icon or thumbnail */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted",
+                        isImage && onPreview && "cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                      )}
+                      onClick={() => isImage && onPreview && onPreview(file)}
+                    >
                       {isImage && file.url ? (
                         <img
                           src={file.url}
@@ -320,13 +330,15 @@ export default function FileAttachment({
                             Download
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(file.id)}
-                          className="text-destructive"
-                        >
-                          <X className="mr-2 h-4 w-4" />
-                          Remove
-                        </DropdownMenuItem>
+                        {!reviewMode && (
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(file.id)}
+                            className="text-destructive"
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Remove
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </>
