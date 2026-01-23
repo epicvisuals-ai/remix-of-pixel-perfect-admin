@@ -295,7 +295,13 @@ const CreateProjectPage = () => {
                   mode="single"
                   selected={deadline}
                   onSelect={setDeadline}
-                  disabled={(date) => date < new Date()}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const checkDate = new Date(date);
+                    checkDate.setHours(0, 0, 0, 0);
+                    return checkDate <= today;
+                  }}
                   initialFocus
                   className="pointer-events-auto"
                 />
@@ -378,7 +384,13 @@ const CreateProjectPage = () => {
                                 onSelect={(date) =>
                                   updateDeliverable(deliverable.id, "dueDate", date)
                                 }
-                                disabled={(date) => date < new Date()}
+                                disabled={(date) => {
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+                                  const checkDate = new Date(date);
+                                  checkDate.setHours(0, 0, 0, 0);
+                                  return checkDate <= today;
+                                }}
                                 initialFocus
                                 className="pointer-events-auto"
                               />
