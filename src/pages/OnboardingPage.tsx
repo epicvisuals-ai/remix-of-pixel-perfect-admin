@@ -12,11 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Shield, Coins, Users, Sparkles, Zap, Check, Loader2 } from "lucide-react";
+import { FileText, Shield, Coins, Users, Sparkles, Zap, Check, Loader2, Building2, User } from "lucide-react";
 import { ROLES, type AppRole } from "@/types/roles";
 import { onboardingApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const OnboardingPage = () => {
     firstName: "",
     lastName: "",
     companyName: "",
-    role: "",
+    role: "brand",
   });
 
   const updateLocalUser = (onboardingStep: number, onboardingCompleted: boolean) => {
@@ -213,42 +214,68 @@ const OnboardingPage = () => {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Company name</Label>
-                  <Input
-                    id="companyName"
-                    placeholder="Company Inc."
-                    value={formData.companyName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, companyName: e.target.value })
-                    }
-                  />
+                <div className="space-y-4">
+                  <Label>I am a...</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, role: 'brand' })}
+                      className={cn(
+                        "flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all duration-200 text-left",
+                        formData.role === 'brand'
+                          ? "border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/20"
+                          : "border-border hover:border-cyan-200 bg-background"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-12 h-12 rounded-full flex items-center justify-center",
+                        formData.role === 'brand' ? "bg-cyan-500 text-white" : "bg-muted text-muted-foreground"
+                      )}>
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold">Brand</div>
+                        <div className="text-xs text-muted-foreground mt-1">I want to hire creators</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, role: 'creator' })}
+                      className={cn(
+                        "flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all duration-200 text-left",
+                        formData.role === 'creator'
+                          ? "border-purple-500 bg-purple-50/50 dark:bg-purple-950/20"
+                          : "border-border hover:border-purple-200 bg-background"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-12 h-12 rounded-full flex items-center justify-center",
+                        formData.role === 'creator' ? "bg-purple-500 text-white" : "bg-muted text-muted-foreground"
+                      )}>
+                        <User className="w-6 h-6" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold">Creator</div>
+                        <div className="text-xs text-muted-foreground mt-1">I want to create content</div>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value: AppRole) =>
-                      setFormData({ ...formData, role: value })
-                    }
-                  >
-                    <SelectTrigger id="role" className="bg-background">
-                      <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      {Object.values(ROLES).map((role) => (
-                        <SelectItem key={role.id} value={role.id}>
-                          <div className="flex flex-col">
-                            <span>{role.label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {role.description}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+
+                {formData.role !== 'creator' && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <Label htmlFor="companyName">Company name</Label>
+                    <Input
+                      id="companyName"
+                      placeholder="Company Inc."
+                      value={formData.companyName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, companyName: e.target.value })
+                      }
+                    />
+                  </div>
+                )}
               </Card>
             </div>
           )}
