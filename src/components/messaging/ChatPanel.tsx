@@ -42,15 +42,41 @@ export function ChatPanel() {
   const [newMessage, setNewMessage] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
 
   const activeConv = conversations.find((c) => c.id === activeConversation);
   const isOnMessagesPage = location.pathname === "/messages";
 
+  const scrollToLatestMessage = (behavior: ScrollBehavior = "smooth") => {
+    const scrollViewport = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLDivElement | null;
+
+    if (scrollViewport) {
+      scrollViewport.scrollTo({ top: scrollViewport.scrollHeight, behavior });
+      return;
+    }
+
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isParticipantTyping]);
+    if (activeConversation && isOpen) {
+      scrollToLatestMessage("smooth");
+    }
+  }, [messages, isParticipantTyping, activeConversation, isOpen]);
+
+  useEffect(() => {
+    if (activeConversation && isOpen) {
+      const timer = window.setTimeout(() => {
+        scrollToLatestMessage("auto");
+      }, 0);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [activeConversation, isOpen]);
 
   useEffect(() => {
     if (activeConversation && isOpen) {
@@ -150,7 +176,7 @@ export function ChatPanel() {
       {activeConversation ? (
         <>
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4">
+          <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
             <div className="space-y-4">
               {messages.map((message) => (
                 <div
