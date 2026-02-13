@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MemberAvatar } from "./MemberAvatar";
 import {
@@ -10,13 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface Member {
   id: string;
@@ -29,13 +22,15 @@ interface Member {
 interface MemberListProps {
   members: Member[];
   onInvite?: (email: string, role: string) => Promise<void>;
+  onDelete?: (memberId: string) => Promise<void>;
 }
 
-export function MemberList({ members, onInvite }: MemberListProps) {
+export function MemberList({ members, onInvite, onDelete }: MemberListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("brand");
   const [isInviting, setIsInviting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleInvite = async () => {
     if (email.trim() && onInvite) {
@@ -43,10 +38,21 @@ export function MemberList({ members, onInvite }: MemberListProps) {
       try {
         await onInvite(email.trim(), role);
         setEmail("");
-        setRole("admin");
+        setRole("brand");
         setDialogOpen(false);
       } finally {
         setIsInviting(false);
+      }
+    }
+  };
+
+  const handleDelete = async (memberId: string) => {
+    if (onDelete && !deletingId) {
+      setDeletingId(memberId);
+      try {
+        await onDelete(memberId);
+      } finally {
+        setDeletingId(null);
       }
     }
   };
@@ -93,7 +99,20 @@ export function MemberList({ members, onInvite }: MemberListProps) {
               </div>
               <p className="text-sm text-muted-foreground truncate">{member.email}</p>
             </div>
-            <span className="text-sm text-muted-foreground">{member.role}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">{member.role}</span>
+              {member.role.toLowerCase() === "brand" && onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDelete(member.id)}
+                  disabled={deletingId === member.id}
+                >
+                  <Trash2 className={`h-4 w-4 ${deletingId === member.id ? "animate-pulse" : ""}`} />
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -119,18 +138,6 @@ export function MemberList({ members, onInvite }: MemberListProps) {
                   }
                 }}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="brand">Brand</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <div className="flex justify-end">

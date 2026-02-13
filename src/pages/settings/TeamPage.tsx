@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TeamCard } from "@/components/admin/TeamCard";
 import { MemberList } from "@/components/admin/MemberList";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,30 +19,40 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  const fetchMembers = useCallback(async (userId: string | null) => {
+    try {
+      const response = await teamApi.getTeamMembers();
+      const transformedMembers = response.data.items.map((member) => ({
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        role: member.role.charAt(0).toUpperCase() + member.role.slice(1),
+        isCurrentUser: member.user_id === userId,
+      }));
+      setMembers(transformedMembers);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.detail || "Failed to load team members",
+        variant: "destructive",
+      });
+    }
+  }, []);
+
   // Fetch current user and team members on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
         // Fetch current user to identify them in the list
         const userResponse = await userApi.getMe();
         setCurrentUserId(userResponse.data.id);
-
-        // Fetch team members
-        const response = await teamApi.getTeamMembers();
-        const transformedMembers = response.data.items.map((member) => ({
-          id: member.id,
-          name: member.name,
-          email: member.email,
-          role: member.role.charAt(0).toUpperCase() + member.role.slice(1),
-          isCurrentUser: member.user_id === userResponse.data.id,
-        }));
-        setMembers(transformedMembers);
+        await fetchMembers(userResponse.data.id);
       } catch (error: any) {
+        // Error handling already in fetchMembers, but for getMe:
         toast({
           title: "Error",
-          description: error.response?.data?.detail || "Failed to load team members",
+          description: error.response?.data?.detail || "Failed to load user data",
           variant: "destructive",
         });
       } finally {
@@ -51,7 +61,7 @@ export default function TeamPage() {
     };
 
     fetchData();
-  }, []);
+  }, [fetchMembers]);
 
   const handleInvite = async (email: string, role: string) => {
     try {
@@ -66,19 +76,29 @@ export default function TeamPage() {
       });
 
       // Refresh team members list
-      const teamResponse = await teamApi.getTeamMembers();
-      const transformedMembers = teamResponse.data.items.map((member) => ({
-        id: member.id,
-        name: member.name,
-        email: member.email,
-        role: member.role.charAt(0).toUpperCase() + member.role.slice(1),
-        isCurrentUser: member.user_id === currentUserId,
-      }));
-      setMembers(transformedMembers);
+      await fetchMembers(currentUserId);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.response?.data?.detail || "Failed to send invitation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (memberId: string) => {
+    try {
+      await teamApi.deleteTeamMember(memberId);
+      toast({
+        title: "Success",
+        description: "Member removed successfully",
+      });
+      // Refresh team members list
+      await fetchMembers(currentUserId);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.detail || "Failed to remove member",
         variant: "destructive",
       });
     }
@@ -149,6 +169,7 @@ export default function TeamPage() {
       <MemberList
         members={members}
         onInvite={handleInvite}
+        onDelete={handleDelete}
       />
     </div>
   );
