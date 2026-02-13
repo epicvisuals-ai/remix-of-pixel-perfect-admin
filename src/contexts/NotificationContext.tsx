@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 import { notificationsApi, ApiNotification, notificationPreferencesApi, ApiNotificationPreferences } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Notification {
   id: string;
@@ -144,6 +145,7 @@ const mapPreferencesToApi = (prefs: NotificationPreferences): Partial<ApiNotific
 };
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
@@ -153,6 +155,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Fetch preferences from API
   const fetchPreferences = useCallback(async () => {
+    if (!isAuthenticated) {
+      setPreferences(defaultPreferences);
+      setIsLoadingPreferences(false);
+      return;
+    }
+
     setIsLoadingPreferences(true);
     try {
       const response = await notificationPreferencesApi.getPreferences();
@@ -164,9 +172,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsLoadingPreferences(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const updatePreferences = useCallback(async (prefs: Partial<NotificationPreferences>) => {
+    if (!isAuthenticated) return;
+
     // Update local state immediately for responsive UI
     const updatedPreferences = {
       ...preferences,
@@ -189,7 +199,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Revert to previous preferences on error
       setPreferences(preferences);
     }
-  }, [preferences]);
+  }, [isAuthenticated, preferences]);
 
   const addNotification = useCallback(
     (notification: Omit<Notification, "id" | "createdAt" | "read">, showToast = true) => {
@@ -241,6 +251,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   );
 
   const markAsRead = useCallback(async (id: string) => {
+    if (!isAuthenticated) return;
+
     try {
       await notificationsApi.markAsRead(id);
       setNotifications((prev) =>
@@ -250,9 +262,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const markAllAsRead = useCallback(async () => {
+    if (!isAuthenticated) return;
+
     try {
       await notificationsApi.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -260,13 +274,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const clearNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const deleteNotification = useCallback(async (id: string) => {
+    if (!isAuthenticated) return;
+
     try {
       await notificationsApi.deleteNotification(id);
       const notification = notifications.find((n) => n.id === id);
@@ -277,9 +293,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error("Failed to delete notification:", error);
     }
-  }, [notifications]);
+  }, [isAuthenticated, notifications]);
 
   const clearAll = useCallback(async () => {
+    if (!isAuthenticated) return;
+
     try {
       await notificationsApi.clearAll();
       setNotifications([]);
@@ -287,9 +305,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error("Failed to clear all notifications:", error);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     try {
       const response = await notificationsApi.getNotifications();
       const mappedNotifications = response.data.items.map(mapApiNotification);
@@ -299,16 +323,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch notifications and preferences on mount
   useEffect(() => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setPreferences(defaultPreferences);
+      setIsLoadingPreferences(false);
+      return;
+    }
+
     fetchNotifications();
     fetchPreferences();
-  }, [fetchNotifications, fetchPreferences]);
+  }, [isAuthenticated, fetchNotifications, fetchPreferences]);
 
   // Poll for notification count every 30 seconds
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const fetchNotificationCount = async () => {
       try {
         const response = await notificationsApi.getCount();
@@ -358,7 +392,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const interval = setInterval(fetchNotificationCount, 30000);
 
     return () => clearInterval(interval);
-  }, [unreadCount, preferences, playSound, showNotification, isTabVisible]);
+  }, [isAuthenticated, unreadCount, preferences, playSound, showNotification, isTabVisible]);
 
   return (
     <NotificationContext.Provider
