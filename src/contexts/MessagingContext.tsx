@@ -157,6 +157,11 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
 
   // Fetch conversations
   const fetchConversations = useCallback(async (search?: string) => {
+    if (!isAuthenticated) {
+      setConversations([]);
+      return;
+    }
+
     setIsLoadingConversations(true);
     try {
       const response = await messagingApi.getConversations({ search });
@@ -168,10 +173,15 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoadingConversations(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch messages for a conversation
   const fetchMessages = useCallback(async (conversationId: string, page: number = 1) => {
+    if (!isAuthenticated) {
+      setAllMessages({});
+      return;
+    }
+
     setIsLoadingMessages(true);
     try {
       const response = await messagingApi.getMessages(conversationId, { page, limit: 50 });
@@ -196,7 +206,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoadingMessages(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Refresh conversations
   const refreshConversations = useCallback(async () => {
@@ -205,8 +215,15 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
 
   // Initial fetch
   useEffect(() => {
+    if (!isAuthenticated) {
+      setConversations([]);
+      setAllMessages({});
+      setActiveConversationState(null);
+      return;
+    }
+
     fetchConversations();
-  }, [fetchConversations]);
+  }, [isAuthenticated, fetchConversations]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -231,9 +248,11 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
 
   // Search conversations
   const searchConversations = useCallback((query: string) => {
+    if (!isAuthenticated) return;
+
     setSearchQuery(query);
     fetchConversations(query || undefined);
-  }, [fetchConversations]);
+  }, [isAuthenticated, fetchConversations]);
 
   // Load more messages
   const loadMoreMessages = useCallback(async () => {
@@ -244,6 +263,11 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
 
   // Mark messages as read when viewing conversation
   const setActiveConversation = useCallback(async (id: string | null) => {
+    if (!isAuthenticated) {
+      setActiveConversationState(null);
+      return;
+    }
+
     setActiveConversationState(id);
     if (id) {
       // Fetch messages for this conversation
@@ -263,9 +287,11 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         console.error("Failed to mark conversation as read:", error);
       }
     }
-  }, [fetchMessages]);
+  }, [isAuthenticated, fetchMessages]);
 
   const sendMessage = useCallback(async (content: string, attachments?: Attachment[]) => {
+    if (!isAuthenticated) return;
+
     if (!activeConversation || (!content.trim() && (!attachments || attachments.length === 0))) return;
 
     const tempId = `temp-${Date.now()}`;
@@ -354,7 +380,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         [activeConversation]: (prev[activeConversation] || []).filter((msg) => msg.id !== tempId),
       }));
     }
-  }, [activeConversation]);
+  }, [isAuthenticated, activeConversation]);
 
   const setUserTyping = useCallback((isTyping: boolean) => {
     // In a real app, this would emit to the server via WebSocket
@@ -366,6 +392,10 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     participantName: string,
     participantAvatar: string
   ): Promise<{ conversationId: string | null; isNew: boolean }> => {
+    if (!isAuthenticated) {
+      return { conversationId: null, isNew: false };
+    }
+
     try {
       // First, check via API if a conversation already exists
       const response = await messagingApi.getConversations({});
@@ -395,7 +425,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       toast.error("Failed to start conversation");
       return { conversationId: null, isNew: false };
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const startConversation = useCallback(async (
     participantId: string, 
@@ -403,6 +433,8 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     participantAvatar: string,
     initialMessage?: string
   ): Promise<string | null> => {
+    if (!isAuthenticated) return null;
+
     // Check if conversation already exists locally first
     const existingConv = conversations.find((c) => c.participantId === participantId);
     if (existingConv) {
@@ -429,7 +461,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       toast.error("Failed to start conversation");
       return null;
     }
-  }, [conversations, setActiveConversation]);
+  }, [isAuthenticated, conversations, setActiveConversation]);
 
   return (
     <MessagingContext.Provider
