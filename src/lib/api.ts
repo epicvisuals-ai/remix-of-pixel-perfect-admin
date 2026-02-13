@@ -31,8 +31,6 @@ api.interceptors.response.use(
       if (window.location.pathname !== '/auth' && !window.location.pathname.startsWith('/auth/')) {
         window.location.href = '/auth';
       }
-    } else if (error.response?.status === 403 && error.response?.data?.detail?.code === "ONBOARDING_REQUIRED") {
-      window.location.href = "/onboarding";
     }
     return Promise.reject(error);
   }
