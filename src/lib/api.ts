@@ -143,6 +143,7 @@ export const teamApi = {
   getTeamMembers: () => api.get<TeamMembersResponse>('/team_members'),
   inviteTeamMember: (data: InviteTeamMemberRequest) =>
     api.post<InviteTeamMemberResponse>('/team_members/invite', data),
+  deleteTeamMember: (memberId: string) => api.delete(`/team_members/${memberId}`),
 };
 
 export interface CreateRequestPayload {
