@@ -32,6 +32,9 @@ export function MemberList({ members, onInvite, onDelete }: MemberListProps) {
   const [isInviting, setIsInviting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const currentUser = members.find((m) => m.isCurrentUser);
+  const currentUserRole = currentUser?.role.toLowerCase();
+
   const handleInvite = async () => {
     if (email.trim() && onInvite) {
       setIsInviting(true);
@@ -101,7 +104,7 @@ export function MemberList({ members, onInvite, onDelete }: MemberListProps) {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">{member.role}</span>
-              {member.role.toLowerCase() === "brand" && onDelete && (
+              {onDelete && currentUserRole === "brand" && !member.isCurrentUser && (
                 <Button
                   variant="ghost"
                   size="icon"
