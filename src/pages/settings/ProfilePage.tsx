@@ -3,8 +3,10 @@ import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MemberAvatar } from "@/components/admin/MemberAvatar";
+import { AvatarCropDialog } from "@/components/admin/AvatarCropDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { userApi } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -19,11 +21,19 @@ export default function ProfilePage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { theme, setTheme } = useTheme();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
-  
+
+  // Avatar upload state
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState("");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { setUser } = useAuth();
+
   // Track original values to detect changes
   const originalFirstName = useRef("");
   const originalLastName = useRef("");
@@ -36,6 +46,7 @@ export default function ProfilePage() {
         setFirstName(userData.first_name);
         setLastName(userData.last_name || "");
         setEmail(userData.email);
+        setAvatarUrl(userData.avatar || null);
         originalFirstName.current = userData.first_name;
         originalLastName.current = userData.last_name || "";
       } catch (error) {
@@ -94,6 +105,41 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    setCropImageSrc(objectUrl);
+    setCropDialogOpen(true);
+
+    // Reset so the same file can be selected again
+    e.target.value = "";
+  };
+
+  const handleCropComplete = async (croppedFile: File) => {
+    setIsUploadingAvatar(true);
+    try {
+      const response = await userApi.uploadAvatar(croppedFile);
+      const updatedUser = response.data;
+      setAvatarUrl(updatedUser.avatar || null);
+      setUser(updatedUser);
+      setCropDialogOpen(false);
+      toast.success("Avatar updated");
+    } catch (error) {
+      toast.error("Failed to upload avatar");
+    } finally {
+      setIsUploadingAvatar(false);
+      if (cropImageSrc) {
+        URL.revokeObjectURL(cropImageSrc);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold text-foreground">Profile</h1>
@@ -108,10 +154,31 @@ export default function ProfilePage() {
             </>
           ) : (
             <>
-              <MemberAvatar name={fullName} className="h-16 w-16 text-xl" />
+              <button
+                type="button"
+                onClick={handleAvatarClick}
+                className="relative cursor-pointer group"
+                aria-label="Change avatar"
+              >
+                <MemberAvatar
+                  name={fullName}
+                  avatarUrl={avatarUrl}
+                  className="h-16 w-16 text-xl"
+                />
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-white text-xs font-medium">Edit</span>
+                </div>
+              </button>
               <div>
                 <p className="text-base font-medium text-foreground">{fullName}</p>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handleFileChange}
+              />
             </>
           )}
         </div>
@@ -203,7 +270,7 @@ export default function ProfilePage() {
           <DialogHeader>
             <DialogTitle>Delete your account?</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              All the videos and projects made by this account will also be deleted. 
+              All the videos and projects made by this account will also be deleted.
               This cannot be undone, and you will no longer be able to create an account with this email.
             </DialogDescription>
           </DialogHeader>
@@ -238,6 +305,15 @@ export default function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Avatar Crop Dialog */}
+      <AvatarCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCropComplete}
+        isUploading={isUploadingAvatar}
+      />
     </div>
   );
 }
