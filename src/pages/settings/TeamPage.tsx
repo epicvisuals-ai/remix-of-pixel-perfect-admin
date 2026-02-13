@@ -140,11 +140,11 @@ export default function TeamPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold text-foreground">Team</h1>
 
-      <TeamCard
+      {/* <TeamCard
         teamName={teamName}
         memberCount={members.length}
         onNameChange={setTeamName}
-      />
+      /> */}
 
       <MemberList
         members={members}
