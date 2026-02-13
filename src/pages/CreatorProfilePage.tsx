@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Star, MapPin, Calendar, MessageCircle } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Calendar, MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,9 +11,10 @@ import { FavoriteButton } from "@/components/creators/FavoriteButton";
 import { ReviewCard } from "@/components/creators/ReviewCard";
 import { RequestQuoteModal } from "@/components/creators/RequestQuoteModal";
 import PortfolioPreviewModal, { PortfolioItem } from "@/components/creators/PortfolioPreviewModal";
-import MessagePopup from "@/components/projects/MessagePopup";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useMessaging } from "@/contexts/MessagingContext";
 import { creatorsApi } from "@/lib/api";
+import { toast } from "sonner";
 
 // Mock reviews data
 const reviewsData: Record<string, Array<{
@@ -310,7 +311,8 @@ export default function CreatorProfilePage() {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [portfolioPreviewOpen, setPortfolioPreviewOpen] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
-  const [messagePopupOpen, setMessagePopupOpen] = useState(false);
+  const [isOpeningMessage, setIsOpeningMessage] = useState(false);
+  const { findOrCreateConversation, setActiveConversation, setIsOpen } = useMessaging();
 
   const { data: creatorResponse, isLoading, error } = useQuery({
     queryKey: ['creator', creatorId],
@@ -384,6 +386,31 @@ export default function CreatorProfilePage() {
     .join("")
     .toUpperCase();
 
+  const handleMessageClick = async () => {
+    if (isOpeningMessage || !creator.userId) return;
+
+    setIsOpeningMessage(true);
+    try {
+      const result = await findOrCreateConversation(
+        creator.userId,
+        creator.name,
+        creator.avatar
+      );
+
+      if (result.conversationId) {
+        await setActiveConversation(result.conversationId);
+        setIsOpen(true);
+      } else {
+        toast.error("Failed to open conversation");
+      }
+    } catch (error) {
+      console.error("Failed to open conversation:", error);
+      toast.error("Failed to open conversation");
+    } finally {
+      setIsOpeningMessage(false);
+    }
+  };
+
   if (isLoading) {
     return <CreatorProfileSkeleton />;
   }
@@ -451,9 +478,14 @@ export default function CreatorProfilePage() {
             variant="outline" 
             size="sm" 
             className="gap-2"
-            onClick={() => setMessagePopupOpen(true)}
+            onClick={handleMessageClick}
+            disabled={isOpeningMessage || !creator.userId}
           >
-            <MessageCircle className="h-4 w-4" />
+            {isOpeningMessage ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MessageCircle className="h-4 w-4" />
+            )}
             Message
           </Button>
           <Button size="sm" className="gap-2" onClick={() => setQuoteModalOpen(true)}>
@@ -597,16 +629,6 @@ export default function CreatorProfilePage() {
           imageUrl: item.image,
         }))}
         onNavigate={(item) => setSelectedPortfolioItem(item)}
-      />
-
-      <MessagePopup
-        open={messagePopupOpen}
-        onOpenChange={setMessagePopupOpen}
-        creator={{
-          id: creator.userId,
-          name: creator.name,
-          avatar: creator.avatar,
-        }}
       />
     </div>
   );
