@@ -44,6 +44,7 @@ export interface UserProfile {
   email: string;
   first_name: string;
   last_name: string | null;
+  avatar: string | null;
   default_account_id: string;
   onboarding_completed: boolean;
   onboarding_step: number;
@@ -83,8 +84,15 @@ export const authApi = {
 // User API functions
 export const userApi = {
   getMe: () => api.get<UserProfile>('/users/me'),
-  updateMe: (data: Partial<{ first_name: string; last_name: string; appearance: string }>) => 
+  updateMe: (data: Partial<{ first_name: string; last_name: string; appearance: string }>) =>
     api.patch<UserProfile>('/users/me', data),
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<UserProfile>('/users/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // Onboarding response type
