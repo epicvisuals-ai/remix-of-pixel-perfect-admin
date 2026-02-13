@@ -23,7 +23,7 @@ const OnboardingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUser } = useAuth();
-  
+
   // Get initial step from navigation state or localStorage user profile
   // API onboarding_step + 1 = UI step (API 1 → UI 2, API 2 → UI 3)
   const getInitialStep = () => {
@@ -31,7 +31,7 @@ const OnboardingPage = () => {
     if (typeof stateStep === 'number' && stateStep >= 1 && stateStep <= 2) {
       return stateStep + 1; // API step + 1 = UI step
     }
-    
+
     // Fallback: check localStorage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -40,11 +40,11 @@ const OnboardingPage = () => {
         if (typeof user.onboarding_step === 'number' && user.onboarding_step >= 1) {
           return user.onboarding_step + 1; // API step + 1 = UI step
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return 1;
   };
-  
+
   const [currentStep, setCurrentStep] = useState(getInitialStep);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,25 +64,30 @@ const OnboardingPage = () => {
         user.onboarding_completed = onboardingCompleted;
         localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
   const handleContinue = async () => {
     setIsLoading(true);
-    
+
     try {
       if (currentStep === 1) {
         const response = await onboardingApi.step1();
         updateLocalUser(response.data.onboarding_step, response.data.onboarding_completed);
         setCurrentStep(2);
       } else if (currentStep === 2) {
-        const response = await onboardingApi.step2({
+        const payload: any = {
           first_name: formData.firstName,
           last_name: formData.lastName,
-          company_name: formData.companyName,
           role: formData.role.toUpperCase() || 'BRAND',
-        });
+        };
+
+        if (formData.role !== 'creator') {
+          payload.company_name = formData.companyName;
+        }
+
+        const response = await onboardingApi.step2(payload);
         updateLocalUser(response.data.onboarding_step, response.data.onboarding_completed);
         setCurrentStep(3);
       }
@@ -96,11 +101,11 @@ const OnboardingPage = () => {
 
   const handleSkip = async () => {
     setIsLoading(true);
-    
+
     try {
       const response = await onboardingApi.step3();
       updateLocalUser(response.data.onboarding_step, response.data.onboarding_completed);
-      
+
       if (response.data.onboarding_completed) {
         navigate("/dashboard", { replace: true });
       }

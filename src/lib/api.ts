@@ -104,8 +104,8 @@ export interface OnboardingResponse {
 // Onboarding step 2 request type
 export interface OnboardingStep2Request {
   first_name: string;
-  last_name: string;
-  company_name: string;
+  last_name?: string;
+  company_name?: string;
   role: string;
 }
 
