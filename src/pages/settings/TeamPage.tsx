@@ -90,7 +90,7 @@ export default function TeamPage() {
         <h1 className="text-xl font-semibold text-foreground">Team</h1>
 
         {/* TeamCard Skeleton */}
-        <div className="admin-card animate-fade-in">
+        {/* <div className="admin-card animate-fade-in">
           <div className="admin-card-section flex items-center justify-between">
             <Skeleton className="h-5 w-24" />
             <Skeleton className="h-4 w-20" />
@@ -100,7 +100,7 @@ export default function TeamPage() {
             <Skeleton className="h-4 w-12" />
             <Skeleton className="h-10 w-52" />
           </div>
-        </div>
+        </div> */}
 
         {/* MemberList Skeleton */}
         <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
