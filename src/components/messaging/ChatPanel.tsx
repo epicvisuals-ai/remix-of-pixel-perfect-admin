@@ -109,7 +109,8 @@ export function ChatPanel() {
 
   // Don't render floating panel on messages page or auth pages
   const isOnAuthPage = location.pathname.startsWith("/auth");
-  if (isOnMessagesPage || isOnAuthPage) {
+  const isOnOnboardingPage = location.pathname.startsWith("/onboarding");
+  if (isOnMessagesPage || isOnAuthPage || isOnOnboardingPage) {
     return null;
   }
 
