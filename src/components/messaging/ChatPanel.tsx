@@ -107,8 +107,9 @@ export function ChatPanel() {
     setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
-  // Don't render floating panel on messages page
-  if (isOnMessagesPage) {
+  // Don't render floating panel on messages page or auth pages
+  const isOnAuthPage = location.pathname.startsWith("/auth");
+  if (isOnMessagesPage || isOnAuthPage) {
     return null;
   }
 
