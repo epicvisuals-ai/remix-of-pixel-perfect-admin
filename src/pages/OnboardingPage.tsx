@@ -140,25 +140,25 @@ const OnboardingPage = () => {
                   </div>
                   <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                     Your use of this platform is subject to our{" "}
-                    <a href="#" className="text-foreground underline underline-offset-2">
+                    <a href="https://epicvisuals.ai/terms-of-service" target="_blank" rel="noreferrer" className="text-foreground underline underline-offset-2">
                       Terms of Service
                     </a>
                     , the{" "}
-                    <a href="#" className="text-foreground underline underline-offset-2">
-                      User Terms of Service
+                    <a href="https://epicvisuals.ai/privacy-policy" target="_blank" rel="noreferrer" className="text-foreground underline underline-offset-2">
+                      Privacy Policy
                     </a>
                     , the{" "}
-                    <a href="#" className="text-foreground underline underline-offset-2">
-                      Terms and Conditions
+                    <a href="https://epicvisuals.ai/content-license-terms" target="_blank" rel="noreferrer" className="text-foreground underline underline-offset-2">
+                      Content License Terms
                     </a>
                     , and the{" "}
-                    <a href="#" className="text-foreground underline underline-offset-2">
-                      Privacy Policy
+                    <a href="https://epicvisuals.ai/acceptable-use-policy" target="_blank" rel="noreferrer" className="text-foreground underline underline-offset-2">
+                      Acceptable Use Policy
                     </a>
                     . By using this platform, you agree to abide by these Terms and Policies,
                     including the{" "}
-                    <a href="#" className="text-foreground underline underline-offset-2">
-                      Acceptable Use Policy
+                    <a href="https://epicvisuals.ai/ai-content-policy" target="_blank" rel="noreferrer" className="text-foreground underline underline-offset-2">
+                      AI Content Policy
                     </a>
                     .
                   </p>
