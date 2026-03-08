@@ -122,15 +122,15 @@ const AuthPage = () => {
       </div>
 
       {/* Right side - Gradient */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[hsl(180_60%_90%)] via-[hsl(280_40%_85%)] to-[hsl(330_60%_85%)] dark:from-[hsl(180_40%_20%)] dark:via-[hsl(280_30%_25%)] dark:to-[hsl(330_40%_25%)] items-center justify-center p-12">
-        <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 max-w-sm shadow-lg flex items-center gap-4">
-          <p className="text-foreground">
-            Manage your account settings and preferences with ease.
-          </p>
-          <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
-            <ArrowRight className="w-5 h-5 text-background" />
-          </div>
-        </div>
+      <div className="hidden lg:flex w-1/2 items-center justify-center overflow-hidden">
+        <video
+          src="/promo-video.webm"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
       </div>
     </div>
   );
